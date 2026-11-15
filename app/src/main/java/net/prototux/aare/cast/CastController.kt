@@ -161,6 +161,15 @@ class CastController(private val context: Context, private val settings: Setting
                     if (done) settings.castRestoreScript = null
                     DiagLog.add(if (done) "screen cast: phone display restored" else "screen cast: could not restore the phone display; it is retried when the app next starts")
                 }
+                // Whatever was playing stops with the car: a media Pause key, which does nothing when
+                // nothing plays. Otherwise the music would carry on from the phone's own speaker.
+                if (l != null && l.alive) {
+                    l.key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                    l.key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                } else {
+                    RootShell.run("input keyevent KEYCODE_MEDIA_PAUSE")
+                }
+                DiagLog.add("screen cast: media paused")
                 if (l != null && l.alive) {
                     l.panel(true)
                     if (settings.castHotspot) l.hotspot(false)?.let { DiagLog.add("screen cast: $it") }
