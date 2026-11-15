@@ -31,29 +31,13 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Lists AARE under Developer options > Select mock location app: the car's GPS as the
-         phone's location while connected (car/PhoneLocationFeed). -->
-    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
-        tools:ignore="MockLocation,ProtectedPermissions" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- Do Not Disturb while driving (car/DrivingMode), once the user allows it. -->
-    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <!-- The car's Phone app: recent calls, contacts, placing calls (through the car's Bluetooth). -->
-    <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.READ_CALL_LOG" />
-    <uses-permission android:name="android.permission.READ_CONTACTS" />
-    <!-- The next calendar event on the car's dashboard. -->
-    <uses-permission android:name="android.permission.READ_CALENDAR" />
-    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- Only granted when AARE is installed as a privileged app (tools/magisk): car audio like
          Android Auto, through an audio policy. Ignored on a normal install. -->
@@ -73,6 +57,13 @@
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
+    <!--
+      This fork only casts the phone's screen. AARE's notification listener (messages, directions),
+      its accessibility service (touch for the old phone-screen app), the voice assistant's provider
+      and the microphone, phone, contacts, calendar and Do Not Disturb permissions are not declared:
+      Android can't grant the app any of them. The code that used them is still in the source and
+      finds them denied, as it would on a phone where the user refused them.
+    -->
     <application
         android:name=".AareApp"
         android:allowBackup="false"
@@ -116,23 +107,7 @@
         <service
             android:name=".service.ProjectionService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|mediaProjection|microphone|location" />
-
-        <service
-            android:name=".notify.CarNotificationListener"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-
-        <!-- Car tools for the voice assistant (CarControlProvider checks the caller). -->
-        <provider
-            android:name=".host.CarControlProvider"
-            android:authorities="net.prototux.aare.car"
-            android:exported="true" />
+            android:foregroundServiceType="connectedDevice|mediaProjection|location" />
 
         <!-- Shizuku (adb rights without root): car audio including navigation voice. -->
         <provider
@@ -142,20 +117,6 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
-
-        <!-- Optional: touch for the phone screen shown in the car. -->
-        <service
-            android:name=".mirror.MirrorTouchService"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/mirror_touch_service" />
-        </service>
 
         <!-- A paired head unit with wireless Android Auto connected over Bluetooth. No
              android:permission: both actions are protected system broadcasts, and BLUETOOTH_CONNECT

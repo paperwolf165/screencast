@@ -183,13 +183,7 @@ class MainActivity : ComponentActivity() {
 /** The settings pages, Android Auto style: one per topic, opened from the home page. */
 private enum class Page(val titleRes: Int, val subtitleRes: Int, val icon: ImageVector) {
     CAST(R.string.cast_page_title, R.string.cast_page_subtitle, Icons.Rounded.Cast),
-    CAR_SCREEN(R.string.setup_page_car_screen_title, R.string.setup_page_car_screen_subtitle, Icons.Rounded.Dashboard),
-    APPS(R.string.setup_page_apps_title, R.string.setup_page_apps_subtitle, Icons.Rounded.Apps),
-    ASSISTANT(R.string.assistant_settings_title, R.string.assistant_page_subtitle, Icons.Rounded.Mic),
-    MESSAGES(R.string.msg_settings_title, R.string.msg_page_subtitle, Icons.Rounded.Forum),
-    AUDIO(R.string.audio_settings_title, R.string.audio_page_subtitle, Icons.AutoMirrored.Rounded.VolumeUp),
     CONNECTION(R.string.setup_page_connection_title, R.string.setup_page_connection_subtitle, Icons.Rounded.Bluetooth),
-    CAR_DATA(R.string.setup_page_car_data_title, R.string.setup_page_car_data_subtitle, Icons.Rounded.DirectionsCar),
     ADVANCED(R.string.setup_page_advanced_title, R.string.setup_page_advanced_subtitle, Icons.Rounded.Tune),
     ABOUT(R.string.setup_page_about_title, R.string.setup_page_about_subtitle, Icons.Rounded.Info),
 }
@@ -223,7 +217,7 @@ private fun Home() {
                 item { UpdateBanner() }
                 item { CertificateExpiryBanner() }
                 item { StatusCard(state) }
-                item { Setup(state, refresh, { refresh++ }) { page = it } }
+                item { Setup(refresh) { page = it } }
                 item {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainer)) {
                         Page.entries.forEach { CategoryRow(it) { page = it } }
@@ -244,13 +238,7 @@ private fun Home() {
                 ) {
                     when (p) {
                         Page.CAST -> item { CastSettings(settings) }
-                        Page.CAR_SCREEN -> item { CarScreenSettings(settings, refresh) }
-                        Page.APPS -> item { AppsCard(settings) }
-                        Page.ASSISTANT -> item { AssistantCard(settings) }
-                        Page.MESSAGES -> item { MessageSettings(settings, refresh) }
-                        Page.AUDIO -> item { AudioSettings(settings, state, refresh) { refresh++ } }
                         Page.CONNECTION -> item { ConnectionSettings(settings, refresh) }
-                        Page.CAR_DATA -> item { CarDataCard() }
                         Page.ADVANCED -> {
                             item { HeadUnitServerSettings(settings) }
                             item { CertificatesCard(certs, state) }
@@ -384,7 +372,6 @@ private fun StatusCard(state: ProjectionService.State) {
         }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Pill(stringResource(R.string.setup_preview_car_screen), Icons.Rounded.Tv) { ctx.startActivity(Intent(ctx, CarPreviewActivity::class.java)) }
             if (state.connected) Pill(stringResource(R.string.setup_disconnect), null) { ProjectionService.stop(ctx) }
         }
     }
@@ -405,54 +392,14 @@ private fun Pill(label: String, icon: ImageVector?, onClick: () -> Unit) {
 // ---------------------------------------------------------------- setup checklist
 
 @Composable
-private fun Setup(state: ProjectionService.State, refresh: Int, recheck: () -> Unit, open: (Page) -> Unit) {
+private fun Setup(refresh: Int, open: (Page) -> Unit) {
     val ctx = LocalContext.current
-    fun granted(p: String) = ContextCompat.checkSelfPermission(ctx, p) == PackageManager.PERMISSION_GRANTED
-    val activity = ctx as? android.app.Activity
     val settings = remember { Settings(ctx) }
-    fun rationale(p: String) = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, p)
-    // The rationale of each permission just before the request, and the ones asked for in an earlier one.
-    var rationaleBefore by remember { mutableStateOf(emptySet<String>()) }
-    var askedBefore by remember { mutableStateOf(emptySet<String>()) }
-    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        recheck()
-        // Denied twice, a permission is no longer asked for: the request answers at once and the row
-        // would seem dead, so open AARE's system settings to grant it there.
-        val blocked = activity != null && result.filterValues { !it }.keys.any {
-            permissionBlocked(it in rationaleBefore, rationale(it), it in askedBefore)
-        }
-        if (blocked) ctx.startSafely(appDetails(ctx))
-    }
-    // Only the permissions this Android version has: a newer one reads as denied on older releases and
-    // can't be requested, so setup would never finish. Before 12, Bluetooth and Wi-Fi scans need location.
-    // Android 12+ ignores a request for fine location without coarse; precise stays required (wireless
-    // before 13, car apps' location).
-    val runtimePerms = buildList {
-        add(Manifest.permission.RECORD_AUDIO)
-        add(Manifest.permission.ACCESS_COARSE_LOCATION); add(Manifest.permission.ACCESS_FINE_LOCATION)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { add(Manifest.permission.BLUETOOTH_CONNECT); add(Manifest.permission.BLUETOOTH_SCAN) }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { add(Manifest.permission.POST_NOTIFICATIONS); add(Manifest.permission.NEARBY_WIFI_DEVICES) }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) add(Manifest.permission.ACCESS_LOCAL_NETWORK)
-        addAll(listOf(Manifest.permission.CALL_PHONE, Manifest.permission.ANSWER_PHONE_CALLS, Manifest.permission.READ_CALL_LOG,
-            Manifest.permission.READ_CONTACTS, Manifest.permission.READ_PHONE_STATE, Manifest.permission.READ_CALENDAR))
-    }
     @Suppress("UNUSED_EXPRESSION") refresh
-    val perms = runtimePerms.all(::granted)
-    val notificationAccess = NotificationManagerCompat.getEnabledListenerPackages(ctx).contains(ctx.packageName)
-    val audio = CaptureMethods.audioPolicyAvailable(ctx) || CaptureMethods.shizukuAvailable() || CaptureMethods.rootAvailable(ctx) || state.audioCapture
-    if (perms && notificationAccess && audio) return
-
+    // Root is all a cast needs set up: with it, the app grants itself the rest (cast/CastSetup).
+    if (settings.castRootReady) return
     Section(stringResource(R.string.setup_finish_title)) {
-        Check(stringResource(R.string.setup_check_permissions_title), stringResource(R.string.setup_check_permissions_subtitle), perms) {
-            rationaleBefore = runtimePerms.filter(::rationale).toSet()
-            askedBefore = settings.requestedPermissions
-            settings.requestedPermissions = askedBefore + runtimePerms
-            permissions.launch(runtimePerms.toTypedArray())
-        }
-        Check(stringResource(R.string.setup_check_notification_access_title), stringResource(R.string.setup_check_notification_access_subtitle), notificationAccess) {
-            ctx.startSafely(Intent(AndroidSettings.ACTION_NOTIFICATION_LISTENER_SETTINGS), appDetails(ctx))
-        }
-        Check(stringResource(R.string.audio_settings_title), stringResource(R.string.setup_check_audio_subtitle), audio) { open(Page.AUDIO) }
+        Check(stringResource(R.string.cast_root_title), stringResource(R.string.cast_root_missing), false) { open(Page.CAST) }
     }
 }
 

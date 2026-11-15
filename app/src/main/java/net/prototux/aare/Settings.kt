@@ -208,9 +208,10 @@ class Settings(context: Context) {
     /**
      * Screen cast mode: the car shows the phone's own screen, full screen, instead of AARE's car
      * interface, and the car's touches go to the phone. Needs root (see the cast package).
+     * Always on in this app, which has no switch for it; false brings AARE's car interface back.
      */
     var castMode: Boolean
-        get() = prefs.getBoolean("cast_mode", false)
+        get() = prefs.getBoolean("cast_mode", true)
         set(v) = prefs.edit { putBoolean("cast_mode", v) }
 
     /** Root was granted to AARE once (the cast setup ran). */

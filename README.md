@@ -10,8 +10,8 @@ services, no account, no tracking, and nothing to confirm each time: unlock the 
 > [prototux](https://github.com/prototux) and its contributors.** AARE is the open-source
 > replacement for the phone side of Android Auto: the protocol, the connection to the car, the
 > audio capture and nearly all of the code here are their work. This fork adds one thing, the root
-> **screen cast mode** below, and renames the app so the two aren't confused. All of AARE's own
-> features are still in the app and documented further down. Same licence: GPL-3.0.
+> **screen cast mode** below, takes AARE's own car interface and its options out of the app, and
+> renames it so the two aren't confused. Same licence: GPL-3.0.
 
 **Contents:** [Screen cast mode](#screen-cast-mode) · [Install](#install-wingmirror) ·
 [What differs from AARE](#what-differs-from-aare) · [Credits](#credits) ·
@@ -19,8 +19,8 @@ services, no account, no tracking, and nothing to confirm each time: unlock the 
 
 ## Screen cast mode
 
-Turn it on under **Screen cast** in the app. The car then shows the phone's screen instead of
-the AARE car interface, over the same Android Auto connection (USB or wireless).
+It is the only thing the app does: the car shows the phone's screen, full screen, over its
+Android Auto connection (USB or wireless). The switches are under **Screen cast** in the app.
 
 | Switch | What it does | How |
 |---|---|---|
@@ -33,7 +33,7 @@ the AARE car interface, over the same Android Auto connection (USB or wireless).
 | **Resolution** | *Head unit* (pixel for pixel), *Phone* (as large as the panel allows, scaled down for the car) or *Custom* | `wm size` |
 | **Density (dpi)** | Empty: things keep the size they have on the phone. Or your own value | `wm density` |
 
-**Setup, once:** turn the mode on and allow Wingmirror in your root manager (Magisk, KernelSU, APatch)
+**Setup, once:** tap *Root access* and allow Wingmirror in your root manager (Magisk, KernelSU, APatch)
 when it asks; choose to allow it for good. Root then grants the rest by itself (the notification,
 Bluetooth and Wi-Fi permissions a connection uses, and the battery exemption), and after the
 first USB connection it makes Wingmirror the default app for that head unit. From then on: unlock the
@@ -78,18 +78,27 @@ Or build it yourself: `./gradlew :app:assembleDebug` (JDK 21 and the Android SDK
 The build is debug-signed, and the app keeps AARE's application id (`net.prototux.aare`), so it
 replaces an installed AARE rather than sitting next to it: uninstall AARE first.
 
-Then open Wingmirror, go to **Screen cast**, turn it on and grant root.
+Then open Wingmirror, go to **Screen cast** and grant root.
 
 ## What differs from AARE
 
-- **Screen cast mode**, with its settings page and root setup.
+- **Screen cast is the whole app.** A connected car always gets the phone's screen; there is no
+  car interface, launcher or dashboard to choose instead.
+- **AARE's other options are gone from the app:** the car screen styles, the app list, the voice
+  assistant, messages, car audio methods and car data pages, the setup checklist and the car
+  screen preview. What is left: *Screen cast*, *Connection*, *Advanced* (certificates, the log)
+  and *About*.
+- **It cannot be given what it doesn't need.** The notification listener, the accessibility
+  service and the assistant's provider are not in the app, so Android never lists it under
+  notification access or accessibility. Neither are the microphone, phone, call log, contacts,
+  calendar, mock location and Do Not Disturb permissions.
 - The app's name and icon.
-- The update check and the weather are **off by default**, so a fresh install makes no network
-  request of its own. The update check, if you turn it on, looks at this repository's releases.
+- The update check and the weather are off, so the app makes no network request of its own. (An
+  update check would look at this repository's releases.)
 - The About screen links here for the code and issues, and credits AARE.
 
-Nothing of AARE's was removed: with screen cast mode off, the app is AARE (its car interface,
-apps, messages, assistant and so on, as documented below).
+AARE's code for all of that is still in the source tree, unused: this fork changes as little of
+AARE as it can, so its fixes stay easy to merge.
 
 ## Credits
 
@@ -106,9 +115,12 @@ apps, messages, assistant and so on, as documented below).
 
 # AARE, the project this is built on
 
-What follows is AARE's own README, kept as it is: it describes everything in the app besides
-screen cast mode, and the cars it has been tried with. Where it says AARE, read "this app"; its
-download links and release signature are AARE's own, not this fork's.
+What follows is AARE's own README, kept as it is. For Wingmirror, the parts that still apply
+are the ones about the connection: [which cars work](#will-it-work-in-my-car),
+[AA key extraction](#aa-key-extraction) for head units that refuse the phone, wireless, and the
+[desktop head unit](#testing-without-a-car-the-desktop-head-unit) for trying it without a car.
+The car interface, apps, messages, assistant and car audio it describes are AARE's and are not
+in this app; its download links and release signature are AARE's own too.
 
 **Android Auto, without Google.** AARE is an open-source replacement for the phone side of
 Android Auto. Plug your phone into the car, or connect wirelessly, and get your navigation, music,

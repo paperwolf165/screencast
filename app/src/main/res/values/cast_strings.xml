@@ -8,15 +8,14 @@
     <string name="cast_page_title">Screen cast</string>
     <string name="cast_page_subtitle">The phone\'s own screen in the car, with root</string>
 
-    <string name="cast_section_mode">Screen cast mode</string>
-    <string name="cast_toggle_mode_title">Cast the phone screen</string>
-    <string name="cast_toggle_mode_subtitle">The car shows the phone\'s screen, full screen, instead of Wingmirror\'s car interface. Unlock the phone and plug it in: nothing to confirm.</string>
+    <string name="cast_section_mode">Screen cast</string>
+    <string name="cast_mode_text">The car shows the phone\'s screen, full screen. Unlock the phone and plug it in: nothing to confirm.</string>
     <string name="cast_root_title">Root access</string>
     <string name="cast_root_ready">Granted. Wingmirror mirrors the screen and sets its permissions itself, without Android\'s dialogs.</string>
     <string name="cast_root_missing">Tap to ask your root manager (Magisk, KernelSU, APatch). Choose to allow it for good: it is asked once.</string>
     <string name="cast_root_checking">Asking for root…</string>
     <string name="cast_root_denied">Root was not granted. Allow Wingmirror in your root manager, then tap again.</string>
-    <string name="cast_audio_needs_android12">Sending all of the phone\'s sound through root needs Android 12 or newer. On this phone, set up another method on the Car audio page.</string>
+    <string name="cast_audio_needs_android12">Sending the phone\'s sound to the car through root needs Android 12 or newer: on this phone the cast has no sound.</string>
 
     <string name="cast_section_behaviour">While casting</string>
     <string name="cast_toggle_touch_title">Touch from the car</string>

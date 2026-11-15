@@ -33,12 +33,11 @@ import net.prototux.aare.cast.CastController
 import net.prototux.aare.cast.CastDisplayPlan
 import net.prototux.aare.cast.CastSetup
 
-/** Screen cast mode: the master switch, the root setup, and one switch per thing the cast does. */
+/** The cast's settings: the root setup, and one switch per thing the cast does. */
 @Composable
 internal fun CastSettings(settings: Settings) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    var enabled by remember { mutableStateOf(settings.castMode) }
     var root by remember { mutableStateOf(settings.castRootReady) }
     var asking by remember { mutableStateOf(false) }
     var denied by remember { mutableStateOf(false) }
@@ -68,11 +67,7 @@ internal fun CastSettings(settings: Settings) {
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Section(stringResource(R.string.cast_section_mode)) {
-            Toggle(stringResource(R.string.cast_toggle_mode_title), stringResource(R.string.cast_toggle_mode_subtitle), enabled) {
-                enabled = it
-                settings.castMode = it
-                if (it && !root) setUp()
-            }
+            Text(stringResource(R.string.cast_mode_text), style = MaterialTheme.typography.bodyMedium)
             Check(
                 stringResource(R.string.cast_root_title),
                 stringResource(when {
