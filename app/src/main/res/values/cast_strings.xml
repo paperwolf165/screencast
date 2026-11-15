@@ -20,10 +20,26 @@
     <string name="cast_section_behaviour">While casting</string>
     <string name="cast_toggle_touch_title">Touch from the car</string>
     <string name="cast_toggle_touch_subtitle">Touches and keys on the head unit act on the phone, multi-touch included.</string>
-    <string name="cast_toggle_blank_title">Blank the phone screen</string>
-    <string name="cast_toggle_blank_subtitle">Brightness 0 while connected; your brightness comes back when the car disconnects.</string>
+    <string name="cast_toggle_panel_title">Phone screen off</string>
+    <string name="cast_toggle_panel_subtitle">Switches the phone\'s panel off completely while connected. The phone stays awake behind it, so the cast keeps running.</string>
+    <string name="cast_toggle_blank_title">Brightness 0</string>
+    <string name="cast_toggle_blank_subtitle">Also dims the phone screen to nothing; what is left if this phone won\'t switch its panel off. Your brightness comes back when the car disconnects.</string>
     <string name="cast_toggle_audio_title">All sound to the car</string>
-    <string name="cast_toggle_audio_subtitle">Everything the phone plays goes to the head unit; the phone itself stays quiet.</string>
+    <string name="cast_toggle_audio_subtitle">Every sound the phone makes goes to the head unit: music, video, games, navigation, notifications, alarms, ringtones. The phone itself stays quiet. Phone calls stay on the car\'s Bluetooth.</string>
+
+    <string name="cast_section_car">Phone left in the car</string>
+    <string name="cast_toggle_lock_title">Lock when the car disconnects</string>
+    <string name="cast_toggle_lock_subtitle">Locks the phone and turns its screen off as soon as the Android Auto session ends.</string>
+    <string name="cast_toggle_unlock_title">Unlock when the car connects</string>
+    <string name="cast_toggle_unlock_subtitle">Wakes and unlocks the phone once the car has set up its Android Auto session, so the cast starts by itself.</string>
+    <string name="cast_unlock_code_label">Phone PIN or password</string>
+    <string name="cast_unlock_code_saved">A code is saved. Type a new one to replace it</string>
+    <string name="cast_unlock_code_save">Save</string>
+    <string name="cast_unlock_code_forget">Forget</string>
+    <string name="cast_unlock_code_hint">Needed if the phone has a PIN or password: Wingmirror types it on the lock screen. It is stored encrypted on this phone only. Pattern locks can\'t be typed. After a restart, unlock the phone once by hand: Android won\'t run apps before that. Anyone who can start your car\'s Android Auto session then gets an unlocked phone.</string>
+    <string name="cast_toggle_hotspot_title">Hotspot while connected</string>
+    <string name="cast_toggle_hotspot_subtitle">Turns the phone\'s Wi-Fi hotspot on when the car connects and off when it disconnects. A hotspot that was already on is left alone. Android 11 or newer.</string>
+    <string name="cast_car_gps_note">While connected, the phone\'s location comes from the car\'s GPS, not the phone\'s own receiver, for every app. Nothing to set up: root makes Wingmirror the mock location app. The car has to send its position; most do.</string>
     <string name="cast_toggle_landscape_title">Force landscape</string>
     <string name="cast_toggle_landscape_subtitle">Holds the phone in the head unit\'s orientation, including apps that ask for portrait.</string>
 

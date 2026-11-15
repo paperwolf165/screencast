@@ -24,14 +24,22 @@ Android Auto connection (USB or wireless). The switches are under **Screen cast*
 
 | Switch | What it does | How |
 |---|---|---|
-| **Cast the phone screen** | The phone's display, full screen, on the head unit | A root helper mirrors the display into the video stream: no screen-capture dialog |
 | **Touch from the car** | Touches (multi-touch) and the car's keys act on the phone | Real input events injected by the root helper: no accessibility service |
-| **Blank the phone screen** | Brightness 0 while connected | `settings put system screen_brightness 0` |
-| **All sound to the car** | Everything the phone plays goes to the head unit, the phone stays quiet | AARE's root audio capture (Android 12+) |
+| **Phone screen off** | The phone's panel is switched off completely while connected; the phone stays awake behind it | The display's power mode in SurfaceFlinger, as scrcpy does |
+| **Brightness 0** | The fallback where a phone won't switch its panel off | `settings put system screen_brightness 0` |
+| **All sound to the car** | Every sound the phone makes goes to the head unit and none to its speaker: music, video, games, navigation, notifications, alarms, ringtones, internet calls | An audio policy registered as the shell takes every usage off the speaker (Android 12+); the remote submix if Android refuses it |
 | **Force landscape** | Holds the phone in the head unit's orientation, portrait-only apps included | `user_rotation`, `fixed-to-user-rotation`, `set-ignore-orientation-request` |
+| **Lock when the car disconnects** | The phone locks and its screen goes off when the session ends | `lockNow` and a sleep key from the root helper |
+| **Unlock when the car connects** | The phone wakes and unlocks once the car has negotiated its session | `wm dismiss-keyguard`, then your saved PIN or password typed as key events |
+| **Hotspot while connected** | Wi-Fi hotspot on when the car connects, off when it disconnects (left alone if it was already on) | `TetheringManager` from the root helper (Android 11+) |
 | **Fit the head unit** | The phone's display takes the car screen's shape: no black bars | `wm size` |
 | **Resolution** | *Head unit* (pixel for pixel), *Phone* (as large as the panel allows, scaled down for the car) or *Custom* | `wm size` |
 | **Density (dpi)** | Empty: things keep the size they have on the phone. Or your own value | `wm density` |
+
+Not a switch, always on: **the phone's location comes from the car's GPS** while connected, for
+every app, in place of the phone's own receiver. Root makes Wingmirror Android's "mock location
+app" and the car's fixes replace the GPS, network and fused providers. (The car has to send its
+position over Android Auto; most do. If yours doesn't, the phone keeps its own.)
 
 **Setup, once:** tap *Root access* and allow Wingmirror in your root manager (Magisk, KernelSU, APatch)
 when it asks; choose to allow it for good. Root then grants the rest by itself (the notification,
@@ -49,11 +57,22 @@ unit, and nothing else. The helper is a process of the app's own code started wi
 answers the app's uid and exits with the session. The setup grants no access to contacts, calls,
 location or the microphone.
 
+**Leaving the phone in the car.** With *Lock when the car disconnects* and *Unlock when the car
+connects* both on, the phone can stay plugged in: it locks when the car's session ends and
+unlocks when the car starts one. If the phone has a PIN or password, the unlock has to type it,
+so it is saved on the phone, encrypted with a key that stays in Android's keystore. Understand
+what that means before turning it on: whoever can start your car's Android Auto session gets an
+unlocked phone. Pattern locks can't be typed, and after a restart the phone has to be unlocked
+by hand once (Android runs no apps before that).
+
 **Know before you drive:**
 
 - Android 12 or newer for the sound through root; the mirror itself works from Android 8.
+- Phone calls over the mobile network are not captured (Android doesn't allow it): they go
+  through the car's Bluetooth, as with Android Auto.
+- With the panel off, the touch screen of the phone itself still works: don't leave it where
+  something presses on it.
 - Apps that mark their windows secure (banking, some video apps) show black, as on any mirror.
-- At brightness 0 some panels still glow faintly.
 - The phone has to stay unlocked and awake; the app keeps the screen on while casting.
 - A mirrored phone is not a car interface. Set things up while parked.
 - Over the developer head unit server (and so the desktop head unit) the cast only runs with

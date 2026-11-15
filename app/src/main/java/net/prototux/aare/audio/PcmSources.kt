@@ -53,6 +53,17 @@ object CaptureMethods {
     val MEDIA_USAGES = intArrayOf(AudioAttributes.USAGE_MEDIA, AudioAttributes.USAGE_GAME, AudioAttributes.USAGE_UNKNOWN)
     val GUIDANCE_USAGES = intArrayOf(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE, AudioAttributes.USAGE_ASSISTANT)
 
+    /** Every usage but the calls': what screen cast mode takes off the phone's speaker. */
+    val ALL_USAGES_BUT_CALLS = intArrayOf(
+        AudioAttributes.USAGE_UNKNOWN, AudioAttributes.USAGE_MEDIA, AudioAttributes.USAGE_GAME,
+        AudioAttributes.USAGE_ALARM, AudioAttributes.USAGE_NOTIFICATION, AudioAttributes.USAGE_NOTIFICATION_RINGTONE,
+        AudioAttributes.USAGE_NOTIFICATION_EVENT, AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY,
+        AudioAttributes.USAGE_ASSISTANCE_SONIFICATION,
+        AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE, AudioAttributes.USAGE_ASSISTANT,
+    )
+    /** With internet calls (VoIP) too; Android may refuse a policy over those, hence the list without. */
+    val ALL_USAGES = ALL_USAGES_BUT_CALLS + intArrayOf(AudioAttributes.USAGE_VOICE_COMMUNICATION, AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING)
+
     fun audioPolicyAvailable(context: Context): Boolean =
         context.checkSelfPermission("android.permission.MODIFY_AUDIO_ROUTING") == PackageManager.PERMISSION_GRANTED
 
@@ -340,13 +351,20 @@ class ShizukuPolicySource(
  * (KernelSU, Magisk, APatch…) without the Shizuku app or the Magisk module. PCM arrives on the
  * process's stdout.
  */
-class SuSource(private val context: Context, private val rate: Int, private val channels: Int) : PcmSource {
+class SuSource(
+    private val context: Context,
+    private val rate: Int,
+    private val channels: Int,
+    /** Capture exactly these usages through an audio policy (see SuAudioMain); null: the remote submix. */
+    private val usages: IntArray? = null,
+) : PcmSource {
     private var process: Process? = null
     private var stream: InputStream? = null
 
     override fun start(): Boolean {
         val apk = context.applicationInfo.sourceDir
-        val cmd = "CLASSPATH='$apk' app_process / ${SuAudioMain::class.java.name} $rate $channels"
+        val policy = usages?.takeIf { it.isNotEmpty() }?.let { " policy " + it.joinToString(",") } ?: ""
+        val cmd = "CLASSPATH='$apk' app_process / ${SuAudioMain::class.java.name} $rate $channels$policy"
         val p = runCatching { ProcessBuilder("su", "-c", cmd).start() }
             .onFailure { Log.w(TAG, "su launch", it) }.getOrNull() ?: return false
         process = p

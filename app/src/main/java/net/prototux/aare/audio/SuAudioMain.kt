@@ -1,6 +1,8 @@
 package net.prototux.aare.audio
 
 import android.os.ParcelFileDescriptor
+import android.os.Process
+import android.system.Os
 import java.io.FileDescriptor
 import java.io.FileOutputStream
 import kotlin.system.exitProcess
@@ -12,6 +14,11 @@ import kotlin.system.exitProcess
  *
  * It reuses [ShellAudioService] (the remote-submix capture, which drops the root process to the
  * shell uid so CAPTURE_AUDIO_OUTPUT is granted), so there is no separate root capture to maintain.
+ *
+ * With `policy <usage>,<usage>…` after the channels it captures through an audio policy instead
+ * (ShellAudioService.startPolicy, as the shell, which holds MODIFY_AUDIO_ROUTING): the sound of
+ * exactly those usages leaves the phone's speaker and comes here. That is how screen cast mode
+ * takes every kind of sound, not only what the remote submix carries.
  * No minification in release (optimization disabled), so the class survives under this exact name.
  */
 object SuAudioMain {
@@ -19,8 +26,16 @@ object SuAudioMain {
     fun main(args: Array<String>) {
         val rate = args.getOrNull(0)?.toIntOrNull() ?: 48_000
         val channels = args.getOrNull(1)?.toIntOrNull() ?: 2
+        val usages = if (args.getOrNull(2) == "policy") args.getOrNull(3)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toIntArray() else null
         val service = ShellAudioService(null)
-        val pfd = service.start(rate, channels) ?: exitProcess(1)
+        val opened = if (usages != null && usages.isNotEmpty()) {
+            // The policy is registered and recorded as the shell; once dropped there is no way back, and none is needed.
+            if (Process.myUid() == 0) runCatching { Os.setgid(SHELL_UID); Os.setuid(SHELL_UID) }.onFailure { exitProcess(2) }
+            service.startPolicy(0, rate, channels, usages)
+        } else {
+            service.start(rate, channels)
+        }
+        val pfd = opened ?: exitProcess(1)
         try {
             ParcelFileDescriptor.AutoCloseInputStream(pfd).use { input ->
                 val out = FileOutputStream(FileDescriptor.out)
@@ -36,7 +51,10 @@ object SuAudioMain {
             // AARE stopped reading (closed its end of the pipe): we're done.
         } finally {
             service.stop()
+            if (usages != null) service.stopPolicy(0)
         }
         exitProcess(0)
     }
+
+    private const val SHELL_UID = 2000
 }

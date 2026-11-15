@@ -37,4 +37,22 @@ interface ICastHost {
 
     /** Stop mirroring and end the helper process. */
     void exit() = 8;
+
+    /**
+     * Turn the phone's own panel off (false) or back on (true) while Android still counts the screen
+     * as on, so the mirror keeps running. False if this Android has no way to do it.
+     */
+    boolean panel(boolean on) = 9;
+
+    /** Lock the phone now and turn its screen off. */
+    void lock() = 10;
+
+    /**
+     * Wake the phone and dismiss the lock screen, typing [credential] (a PIN or password) if it asks
+     * for one. True if the phone is unlocked afterwards.
+     */
+    boolean unlock(String credential) = 11;
+
+    /** Turn the Wi-Fi hotspot on, or off if this helper turned it on. Returns a log line. */
+    String hotspot(boolean on) = 12;
 }

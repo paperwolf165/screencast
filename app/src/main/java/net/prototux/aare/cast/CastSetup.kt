@@ -43,6 +43,8 @@ object CastSetup {
             PERMISSIONS.forEach { appendLine("pm grant $pkg $it >/dev/null 2>&1") }
             // Android must not put the connection to sleep in the background.
             appendLine("dumpsys deviceidle whitelist +$pkg >/dev/null 2>&1")
+            // The car's GPS as the phone's location: what choosing a "mock location app" in the Developer options does.
+            appendLine("appops set $pkg android:mock_location allow >/dev/null 2>&1")
             appendLine("echo ok")
         }
         val done = RootShell.run(script)?.contains("ok") == true

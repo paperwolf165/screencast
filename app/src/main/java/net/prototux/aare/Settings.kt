@@ -229,6 +229,40 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("cast_blank", true)
         set(v) = prefs.edit { putBoolean("cast_blank", v) }
 
+    /**
+     * The panel itself off while casting (not only dimmed): Android still counts the screen as on,
+     * so the mirror runs. Falls back to [castBlankScreen]'s brightness 0 where it can't be done.
+     */
+    var castPanelOff: Boolean
+        get() = prefs.getBoolean("cast_panel_off", true)
+        set(v) = prefs.edit { putBoolean("cast_panel_off", v) }
+
+    /** Lock the phone and turn its screen off when the car's session ends. */
+    var castAutoLock: Boolean
+        get() = prefs.getBoolean("cast_auto_lock", false)
+        set(v) = prefs.edit { putBoolean("cast_auto_lock", v) }
+
+    /** Wake and unlock the phone when a car's session starts (with [castUnlockCode] if the lock asks for one). */
+    var castAutoUnlock: Boolean
+        get() = prefs.getBoolean("cast_auto_unlock", false)
+        set(v) = prefs.edit { putBoolean("cast_auto_unlock", v) }
+
+    /**
+     * The phone's PIN or password for [castAutoUnlock], encrypted with a key that never leaves the
+     * phone's keystore (cast/CodeVault); empty when none is saved.
+     */
+    var castUnlockCode: String
+        get() = prefs.getString("cast_unlock_code", null)?.let { net.prototux.aare.cast.CodeVault.open(it) } ?: ""
+        set(v) = prefs.edit {
+            val sealed = v.takeIf { it.isNotEmpty() }?.let { net.prototux.aare.cast.CodeVault.seal(it) }
+            if (sealed == null) remove("cast_unlock_code") else putString("cast_unlock_code", sealed)
+        }
+
+    /** Turn the Wi-Fi hotspot on while a car is connected, and off again afterwards. */
+    var castHotspot: Boolean
+        get() = prefs.getBoolean("cast_hotspot", false)
+        set(v) = prefs.edit { putBoolean("cast_hotspot", v) }
+
     /** Everything the phone plays goes to the car while casting. */
     var castAudio: Boolean
         get() = prefs.getBoolean("cast_audio", true)

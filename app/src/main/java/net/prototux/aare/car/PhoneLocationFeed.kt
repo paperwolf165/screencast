@@ -26,12 +26,17 @@ class PhoneLocationFeed(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) add(LocationManager.FUSED_PROVIDER)
     }
     private val active = HashSet<String>()
-    @Volatile private var failed = false
+    /** When taking over the providers was last refused (elapsedRealtime); 0: not refused. */
+    @Volatile private var refusedAt = 0L
+    /** What the connection log last said: providers taken (true), refused (false), nothing yet (null). */
+    private var announced: Boolean? = null
 
     /** A new car fix (any thread). */
     @Synchronized
     fun push(car: Location) {
-        if (failed) return
+        // Refused: try again in a while. In screen cast mode root makes this app the mock location
+        // app as the car connects, which can come after the car's first fix.
+        if (refusedAt != 0L && SystemClock.elapsedRealtime() - refusedAt < RETRY_MS) return
         if (active.isEmpty()) start()
         for (p in active) {
             val l = Location(car).apply {
@@ -56,19 +61,29 @@ class PhoneLocationFeed(context: Context) {
                 active += p
             }.onFailure { Log.w(TAG, "addTestProvider $p", it) }
         }
-        // Not the mock location app: don't keep trying for every fix.
-        if (active.isEmpty()) failed = true
+        // Not the mock location app: don't try again for every fix.
+        val took = active.isNotEmpty()
+        refusedAt = if (took) 0L else SystemClock.elapsedRealtime()
+        // One connection-log line per change, not one per retry.
+        if (announced != took) {
+            announced = took
+            net.prototux.aare.DiagLog.add(
+                if (took) "car GPS: the phone's location now comes from the car (${active.joinToString()})"
+                else "car GPS: Android refused, this app is not the mock location app (retrying)")
+        }
     }
 
     @Synchronized
     fun stop() {
         for (p in active) runCatching { lm.removeTestProvider(p) }
         active.clear()
-        failed = false
+        refusedAt = 0L
+        announced = null
     }
 
     companion object {
         private const val TAG = "AareLocation"
+        private const val RETRY_MS = 5_000L
 
         /** AARE is the phone's mock location app (Developer options > Select mock location app). */
         fun allowed(context: Context): Boolean = runCatching {

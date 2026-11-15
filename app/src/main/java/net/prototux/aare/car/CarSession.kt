@@ -715,7 +715,8 @@ class CarSession(
                     elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
                 }.also {
                     // Turned off mid-drive: give the phone its own GPS back now, not at the disconnect.
-                    if (settings.carGpsForPhone) locationFeed.push(it) else locationFeed.stop()
+                    // Screen cast: always. The phone uses the car's position, not its own receiver's.
+                    if (cast != null || settings.carGpsForPhone) locationFeed.push(it) else locationFeed.stop()
                 }
                 carSensors = true
             }
@@ -755,6 +756,7 @@ class CarSession(
      */
     private fun startAudio(channel: AudioChannel) {
         if (closed) return
+        if (cast != null) { startCastAudio(channel); return }
         val cfg = channel.config ?: return
         val guidance = channel.streamType == AudioStreamType.AUDIO_STREAM_GUIDANCE
         val p = projection()
@@ -807,6 +809,54 @@ class CarSession(
             }
         })
         audioOuts[channel.streamType] = out.also { it.start() }
+    }
+
+    /** Which of [castAudioSources] each car channel is on: the next one takes over when one fails. */
+    private val castAudioStep = HashMap<AudioStreamType, Int>()
+
+    /**
+     * Screen cast: everything the phone plays goes to the car, through root, whatever the Car audio
+     * settings say. An audio policy registered as the shell takes every usage off the phone's
+     * speaker (music, games, notifications, alarms, ringtones, navigation, assistant, VoIP); if
+     * Android refuses it, the same without the call usages; and last the remote submix, which
+     * carries media but leaves some system sounds on the phone. Navigation and assistant voice go
+     * to the car's guidance channel when it has one, so the car can lower the music under them.
+     */
+    private fun startCastAudio(channel: AudioChannel) {
+        val cfg = channel.config ?: return
+        val type = channel.streamType
+        val guidance = type == AudioStreamType.AUDIO_STREAM_GUIDANCE
+        val hasGuidance = audio.any { it.streamType == AudioStreamType.AUDIO_STREAM_GUIDANCE }
+        val step = castAudioStep[type] ?: 0
+        val rate = cfg.samplingRate
+        val ch = cfg.numberOfChannels
+        fun policy(all: IntArray): IntArray = when {
+            guidance -> CaptureMethods.GUIDANCE_USAGES
+            hasGuidance -> all.filter { it !in CaptureMethods.GUIDANCE_USAGES }.toIntArray()
+            else -> all
+        }
+        val (source, label) = when (step) {
+            0 -> SuSource(context, rate, ch, policy(CaptureMethods.ALL_USAGES)) to "every sound, through root"
+            1 -> SuSource(context, rate, ch, policy(CaptureMethods.ALL_USAGES_BUT_CALLS)) to "every sound but internet calls, through root"
+            // One mixed stream: the media channel has it all.
+            2 -> if (guidance) return else SuSource(context, rate, ch) to "the phone's media output, through root"
+            else -> {
+                if (!guidance) DiagLog.add("screen cast audio: no way to capture the phone's sound worked (root audio needs Android 12 or newer)")
+                return
+            }
+        }
+        DiagLog.add("screen cast audio, ${if (guidance) "navigation" else "media"} channel ($rate Hz, $ch ch): $label")
+        audioOuts.remove(type)?.stop()
+        lateinit var out: CarAudioOut
+        out = CarAudioOut(source, channel, if (guidance) guidanceFocus else mediaFocusRequests, onFailed = {
+            main.post {
+                if (closed || !audioOuts.remove(type, out)) return@post
+                DiagLog.add("screen cast audio: \"$label\" failed, trying the next way")
+                castAudioStep[type] = step + 1
+                startCastAudio(channel)
+            }
+        })
+        audioOuts[type] = out.also { it.start() }
     }
 
     /** Music: full focus while it plays. */

@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,6 +44,13 @@ internal fun CastSettings(settings: Settings) {
     var denied by remember { mutableStateOf(false) }
     var touch by remember { mutableStateOf(settings.castTouch) }
     var blank by remember { mutableStateOf(settings.castBlankScreen) }
+    var panelOff by remember { mutableStateOf(settings.castPanelOff) }
+    var autoLock by remember { mutableStateOf(settings.castAutoLock) }
+    var autoUnlock by remember { mutableStateOf(settings.castAutoUnlock) }
+    // Never shown back: the field starts empty, and only says whether a code is saved.
+    var codeSaved by remember { mutableStateOf(settings.castUnlockCode.isNotEmpty()) }
+    var code by remember { mutableStateOf("") }
+    var hotspot by remember { mutableStateOf(settings.castHotspot) }
     var audio by remember { mutableStateOf(settings.castAudio) }
     var landscape by remember { mutableStateOf(settings.castLandscape) }
     var resize by remember { mutableStateOf(settings.castResize) }
@@ -86,6 +94,9 @@ internal fun CastSettings(settings: Settings) {
             Toggle(stringResource(R.string.cast_toggle_touch_title), stringResource(R.string.cast_toggle_touch_subtitle), touch) {
                 touch = it; settings.castTouch = it
             }
+            Toggle(stringResource(R.string.cast_toggle_panel_title), stringResource(R.string.cast_toggle_panel_subtitle), panelOff) {
+                panelOff = it; settings.castPanelOff = it
+            }
             Toggle(stringResource(R.string.cast_toggle_blank_title), stringResource(R.string.cast_toggle_blank_subtitle), blank) {
                 blank = it; settings.castBlankScreen = it
             }
@@ -96,6 +107,43 @@ internal fun CastSettings(settings: Settings) {
             Toggle(stringResource(R.string.cast_toggle_landscape_title), stringResource(R.string.cast_toggle_landscape_subtitle), landscape) {
                 landscape = it; settings.castLandscape = it
             }
+        }
+
+        Section(stringResource(R.string.cast_section_car)) {
+            Toggle(stringResource(R.string.cast_toggle_lock_title), stringResource(R.string.cast_toggle_lock_subtitle), autoLock) {
+                autoLock = it; settings.castAutoLock = it
+            }
+            Toggle(stringResource(R.string.cast_toggle_unlock_title), stringResource(R.string.cast_toggle_unlock_subtitle), autoUnlock) {
+                autoUnlock = it; settings.castAutoUnlock = it
+            }
+            if (autoUnlock) {
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.take(64) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    label = { Text(stringResource(if (codeSaved) R.string.cast_unlock_code_saved else R.string.cast_unlock_code_label)) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(enabled = code.isNotEmpty(), onClick = {
+                        settings.castUnlockCode = code
+                        codeSaved = settings.castUnlockCode.isNotEmpty()
+                        code = ""
+                    }) { Text(stringResource(R.string.cast_unlock_code_save)) }
+                    TextButton(enabled = codeSaved, onClick = {
+                        settings.castUnlockCode = ""
+                        codeSaved = false
+                        code = ""
+                    }) { Text(stringResource(R.string.cast_unlock_code_forget)) }
+                }
+                Hint(stringResource(R.string.cast_unlock_code_hint))
+            }
+            Toggle(stringResource(R.string.cast_toggle_hotspot_title), stringResource(R.string.cast_toggle_hotspot_subtitle), hotspot) {
+                hotspot = it; settings.castHotspot = it
+            }
+            Hint(stringResource(R.string.cast_car_gps_note))
         }
 
         Section(stringResource(R.string.cast_section_display)) {

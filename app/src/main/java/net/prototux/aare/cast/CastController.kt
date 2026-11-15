@@ -77,6 +77,10 @@ class CastController(private val context: Context, private val settings: Setting
             if (applied == key) return@execute
             applyDisplay(l, targetWidth, targetHeight, options)
             applied = key
+            if (settings.castPanelOff) {
+                val off = l.panel(false)
+                DiagLog.add(if (off) "screen cast: phone panel off" else "screen cast: this Android won't switch the panel off; it stays at brightness 0")
+            }
         }
     }
 
@@ -157,6 +161,16 @@ class CastController(private val context: Context, private val settings: Setting
                     if (done) settings.castRestoreScript = null
                     DiagLog.add(if (done) "screen cast: phone display restored" else "screen cast: could not restore the phone display; it is retried when the app next starts")
                 }
+                if (l != null && l.alive) {
+                    l.panel(true)
+                    if (settings.castHotspot) l.hotspot(false)?.let { DiagLog.add("screen cast: $it") }
+                    if (settings.castAutoLock) {
+                        l.lock()
+                        DiagLog.add("screen cast: phone locked")
+                    }
+                } else if (settings.castAutoLock) {
+                    RootShell.run("input keyevent KEYCODE_SLEEP")
+                }
                 l?.release()
                 link = null
                 active--
@@ -184,15 +198,34 @@ class CastController(private val context: Context, private val settings: Setting
         DiagLog.add("screen cast: root helper running")
         // From the next time on, plugging into this head unit asks nothing.
         l.usbDefault()?.let { DiagLog.add("screen cast: $it") }
+        // If the app dies before any display change is made, the helper still locks the phone.
+        l.setCleanup(onDeath(""))
+        connected(l)
         return l
     }
+
+    /** Once per helper, as the car connects: what has to be in place before the picture. */
+    private fun connected(l: CastLink) {
+        // The car's GPS replaces the phone's own (car/PhoneLocationFeed): Android only lets the
+        // "mock location app" do that, which root makes this app without the Developer options.
+        l.shell("appops set ${context.packageName} android:mock_location allow")
+        if (settings.castAutoUnlock) {
+            val ok = l.unlock(settings.castUnlockCode)
+            DiagLog.add(if (ok) "screen cast: phone unlocked" else "screen cast: could not unlock the phone (is the saved PIN right?)")
+        }
+        if (settings.castHotspot) l.hotspot(true)?.let { DiagLog.add("screen cast: $it") }
+    }
+
+    /** What the helper runs if the app dies mid-cast: [restore], then the lock if the session's end locks. */
+    private fun onDeath(restore: String): String =
+        if (settings.castAutoLock) (restore + "\ninput keyevent KEYCODE_SLEEP").trim() else restore
 
     private fun applyDisplay(l: CastLink, targetWidth: Int, targetHeight: Int, options: CastOptions) = synchronized(stateLock) {
         // What an earlier fit changed comes off first, so the state probed below is the phone's own.
         settings.castRestoreScript?.let { earlier ->
             if (l.shell(earlier) == null) return@synchronized
             settings.castRestoreScript = null
-            l.setCleanup("")
+            l.setCleanup(onDeath(""))
         }
         if (!options.changesDisplay) return@synchronized
         val state = l.shell(CastDisplayPlan.PROBE)?.let(CastDisplayPlan::parse)
@@ -204,7 +237,7 @@ class CastController(private val context: Context, private val settings: Setting
         if (plan.apply.isBlank()) return@synchronized
         // The way back is saved, and given to the helper, before anything changes.
         settings.castRestoreScript = plan.restore
-        l.setCleanup(plan.restore)
+        l.setCleanup(onDeath(plan.restore))
         l.shell(plan.apply)
         DiagLog.add("screen cast: phone display set to ${plan.summary}")
     }

@@ -97,6 +97,18 @@ class CastLink(private val context: Context) {
         runCatching { host?.setCleanup(client, script) }
     }
 
+    /** The panel itself off or on; false when the helper can't (or is gone). */
+    fun panel(on: Boolean): Boolean = runCatching { host?.panel(on) == true }.getOrDefault(false)
+
+    fun lock() {
+        runCatching { host?.lock() }
+    }
+
+    /** Blocks for a few seconds while the lock screen goes away. */
+    fun unlock(code: String): Boolean = runCatching { host?.unlock(code) == true }.getOrDefault(false)
+
+    fun hotspot(on: Boolean): String? = runCatching { host?.hotspot(on) }.getOrNull()
+
     fun usbDefault(): String? = runCatching { host?.usbDefault(context.packageName, Process.myUid()) }.getOrNull()
 
     fun release() {
