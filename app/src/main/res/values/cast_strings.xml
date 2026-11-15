@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Screen cast mode (this fork). English only for now, so the translations aren't reported missing. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="cast_page_title">Screen cast</string>
+    <string name="cast_page_subtitle">The phone\'s own screen in the car, with root</string>
+
+    <string name="cast_section_mode">Screen cast mode</string>
+    <string name="cast_toggle_mode_title">Cast the phone screen</string>
+    <string name="cast_toggle_mode_subtitle">The car shows the phone\'s screen, full screen, instead of AARE\'s car interface. Unlock the phone and plug it in: nothing to confirm.</string>
+    <string name="cast_root_title">Root access</string>
+    <string name="cast_root_ready">Granted. AARE mirrors the screen and sets its permissions itself, without Android\'s dialogs.</string>
+    <string name="cast_root_missing">Tap to ask your root manager (Magisk, KernelSU, APatch). Choose to allow it for good: it is asked once.</string>
+    <string name="cast_root_checking">Asking for root…</string>
+    <string name="cast_root_denied">Root was not granted. Allow AARE in your root manager, then tap again.</string>
+    <string name="cast_audio_needs_android12">Sending all of the phone\'s sound through root needs Android 12 or newer. On this phone, set up another method on the Car audio page.</string>
+
+    <string name="cast_section_behaviour">While casting</string>
+    <string name="cast_toggle_touch_title">Touch from the car</string>
+    <string name="cast_toggle_touch_subtitle">Touches and keys on the head unit act on the phone, multi-touch included.</string>
+    <string name="cast_toggle_blank_title">Blank the phone screen</string>
+    <string name="cast_toggle_blank_subtitle">Brightness 0 while connected; your brightness comes back when the car disconnects.</string>
+    <string name="cast_toggle_audio_title">All sound to the car</string>
+    <string name="cast_toggle_audio_subtitle">Everything the phone plays goes to the head unit; the phone itself stays quiet.</string>
+    <string name="cast_toggle_landscape_title">Force landscape</string>
+    <string name="cast_toggle_landscape_subtitle">Holds the phone in the head unit\'s orientation, including apps that ask for portrait.</string>
+
+    <string name="cast_section_display">Phone display</string>
+    <string name="cast_toggle_resize_title">Fit the head unit</string>
+    <string name="cast_toggle_resize_subtitle">Resizes the phone\'s display to the shape of the car screen, so the picture fills it with no black bars.</string>
+    <string name="cast_resolution_title">Resolution</string>
+    <string name="cast_resolution_head_unit">Head unit</string>
+    <string name="cast_resolution_device">Phone</string>
+    <string name="cast_resolution_custom">Custom</string>
+    <string name="cast_resolution_head_unit_hint">The phone renders at the head unit\'s own resolution: pixel for pixel, and the lightest on the phone.</string>
+    <string name="cast_resolution_device_hint">The phone renders as large as its own panel allows, in the head unit\'s shape, and the stream is scaled down for the car.</string>
+    <string name="cast_resolution_custom_hint">Your own size, in the head unit\'s orientation (width first).</string>
+    <string name="cast_custom_width">Width</string>
+    <string name="cast_custom_height">Height</string>
+    <string name="cast_dpi_label">Density (dpi)</string>
+    <string name="cast_dpi_hint">Empty for automatic: things keep the size they have on the phone. Lower shows more, higher makes everything larger.</string>
+    <string name="cast_restore_button">Restore the phone display now</string>
+    <string name="cast_restore_hint">AARE puts the display back when the car disconnects, and after a crash or reboot. This does it by hand.</string>
+    <string name="cast_restore_done">Phone display restored</string>
+    <string name="cast_restore_failed">Could not restore: root was not granted</string>
+    <string name="cast_applies_next_connection">Changes apply from the next connection.</string>
+
+    <string name="cast_status_starting">Starting the screen cast…</string>
+    <string name="cast_status_no_root">Screen cast needs root. Open AARE on the phone, go to Screen cast and grant root access.</string>
+    <string name="cast_status_failed">Android refused to mirror the phone screen. The connection log in AARE says why.</string>
+</resources>

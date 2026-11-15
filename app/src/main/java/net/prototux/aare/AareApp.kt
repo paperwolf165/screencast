@@ -7,6 +7,8 @@ class AareApp : Application() {
         super.onCreate()
         instance = this
         DiagLog.init(this)
+        // A cast cut short (the app killed, a reboot) may have left the display resized, turned or dark.
+        net.prototux.aare.cast.CastController.recover(this)
     }
 
     companion object {

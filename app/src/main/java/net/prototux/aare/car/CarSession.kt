@@ -75,6 +75,8 @@ import net.prototux.aare.audio.ShizukuPolicySource
 import net.prototux.aare.audio.ShizukuSource
 import net.prototux.aare.audio.SuSource
 import net.prototux.aare.audio.MicRouter
+import net.prototux.aare.cast.CastController
+import net.prototux.aare.cast.CastScreen
 import net.prototux.aare.R
 import net.prototux.aare.host.CarRuntime
 import net.prototux.aare.media.MediaHub
@@ -122,6 +124,13 @@ class CarSession(
         deviceName = deviceName(), label = "Android", instanceId = settings.instanceId,
         smallIcon = icon(32), mediumIcon = icon(64), largeIcon = icon(128),
     ), this, net.prototux.aare.SessionAapLog.also { it.verbose = settings.verboseProtocolLog }, SessionOptions(sendPings = wireless, pins = PinnedHeadUnits(context), peerKey = peerKey, trustOnFirstUse = trustOnFirstUse))
+
+    /**
+     * Screen cast mode (Settings.castMode, rooted phones): the car shows the phone's own screen
+     * instead of the car interface, and the car's touches and keys go to the phone. Null when off,
+     * and for peers that may not see the phone screen ([mirror] false).
+     */
+    private val cast: CastController? = if (settings.castMode && mirror) CastController(context, settings) else null
 
     private var video: VideoChannel? = null
     private var mic: MicrophoneChannel? = null
@@ -528,16 +537,23 @@ class CarSession(
         runtime.screenHeightDp = layout.contentHeight * 160 / dpi
         runtime.rightHandDrive = rightHandDrive
         // Assigned before show(), so that a failing show() still has teardownVideo() release the display.
+        val casting = cast
         val pd = ProjectionDisplay(context, w, h, dpi, enc.inputSurface) {
-            val d = LocalDensity.current
-            Box(Modifier.fillMaxSize().background(Color.Black)) {
-                with(d) {
-                    runtime.Root(Modifier.padding(start = layout.padLeft.toDp(), top = layout.padTop.toDp(), end = layout.padRight.toDp(), bottom = layout.padBottom.toDp()))
+            if (casting != null) {
+                CastScreen(casting, layout)
+            } else {
+                val d = LocalDensity.current
+                Box(Modifier.fillMaxSize().background(Color.Black)) {
+                    with(d) {
+                        runtime.Root(Modifier.padding(start = layout.padLeft.toDp(), top = layout.padTop.toDp(), end = layout.padRight.toDp(), bottom = layout.padBottom.toDp()))
+                    }
                 }
             }
         }
         display = pd
         pd.show()
+        // The phone's display takes the shape of everything the head unit shows.
+        casting?.start(layout.visibleWidth, layout.visibleHeight)
         lastFrameMs = SystemClock.elapsedRealtime()
         main.removeCallbacks(stallCheck)
         main.postDelayed(stallCheck, STALL_CHECK_MS)
@@ -590,7 +606,8 @@ class CarSession(
         override fun onInput(report: InputReport) {
             if (report.hasTouchEvent()) {
                 val ev = touch?.map(report.touchEvent) ?: return
-                display?.dispatchTouch(ev)
+                val casting = cast
+                if (casting != null) casting.touch(ev) else display?.dispatchTouch(ev)
             }
             if (report.hasKeyEvent()) {
                 for (k in report.keyEvent.keysList) {
@@ -606,6 +623,13 @@ class CarSession(
                 // order, like Android Auto. Compose maps Tab to "focus next" and Shift+Tab to
                 // "focus previous" (not D-pad up/down, which is 2D spatial and wrong for a knob).
                 for (r in report.relativeEvent.dataList) {
+                    val casting = cast
+                    if (casting != null) {
+                        // On the phone itself a knob step is a D-pad step.
+                        val code = if (r.delta < 0) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN
+                        repeat(kotlin.math.abs(r.delta)) { casting.key(code, true); casting.key(code, false) }
+                        continue
+                    }
                     val meta = if (r.delta < 0) KeyEvent.META_SHIFT_ON else 0
                     repeat(kotlin.math.abs(r.delta)) {
                         val t = SystemClock.uptimeMillis()
@@ -627,6 +651,13 @@ class CarSession(
         // screen is up.
         if (display == null && code in MEDIA_KEYS) {
             if (!down) DiagLog.add("ignoring ${KeyEvent.keyCodeToString(code)} from the car: no car screen yet")
+            return
+        }
+        // Screen cast: the car's keys are the phone's keys (Back, Home, media, D-pad…). The Radio
+        // key still hands the screen back to the car.
+        val casting = cast
+        if (casting != null && code != KEYCODE_RADIO) {
+            casting.key(code, down)
             return
         }
         when (code) {
@@ -703,7 +734,8 @@ class CarSession(
 
     private val audioListener = object : AudioChannel.Listener {
         override fun onAudioReady(channel: AudioChannel, config: aap_protobuf.service.media.shared.message.AudioConfigurationOuterClass.AudioConfiguration) {
-            if (!settings.carAudio) return
+            // Screen cast has its own audio switch.
+            if (!(if (cast != null) settings.castAudio else settings.carAudio)) return
             if (channel.streamType != AudioStreamType.AUDIO_STREAM_MEDIA && channel.streamType != AudioStreamType.AUDIO_STREAM_GUIDANCE) return
             if (!isPrimary(channel)) return
             main.post { startAudio(channel) }
@@ -980,6 +1012,8 @@ class CarSession(
         cluster?.stop()
         micRouter.shutdown()
         teardownVideo()
+        // After the video: the phone's display goes back to what it was before the cast.
+        cast?.stop()
         runtime.stop()
         CarData.reset(owner = this)
         scope.cancel()

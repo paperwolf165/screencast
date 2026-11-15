@@ -50,9 +50,9 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("wireless", true)
         set(v) = prefs.edit { putBoolean("wireless", v) }
 
-    /** Check GitHub for a newer release and warn on the home screen. Off never touches the network. */
+    /** Check GitHub for a newer release and warn on the home screen. Off (the default in this fork) never touches the network. */
     var checkUpdates: Boolean
-        get() = prefs.getBoolean("check_updates", true)
+        get() = prefs.getBoolean("check_updates", false)
         set(v) = prefs.edit { putBoolean("check_updates", v) }
 
     // Update-check cache (see UpdateChecker): the latest release seen and its page, when we last
@@ -142,9 +142,9 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("ignore_driving", false)
         set(v) = prefs.edit { putBoolean("ignore_driving", v) }
 
-    /** The weather next to the clock (from Open-Meteo, with an approximate position). */
+    /** The weather next to the clock (from Open-Meteo, with an approximate position). Off by default in this fork. */
     var showWeather: Boolean
-        get() = prefs.getBoolean("show_weather", true)
+        get() = prefs.getBoolean("show_weather", false)
         set(v) = prefs.edit { putBoolean("show_weather", v) }
 
 
@@ -202,6 +202,71 @@ class Settings(context: Context) {
     var assistantPackage: String?
         get() = prefs.getString("assistant_pkg", null)
         set(v) = prefs.edit { if (v == null) remove("assistant_pkg") else putString("assistant_pkg", v) }
+
+    // ------------------------------------------------------------------ screen cast mode (root)
+
+    /**
+     * Screen cast mode: the car shows the phone's own screen, full screen, instead of AARE's car
+     * interface, and the car's touches go to the phone. Needs root (see the cast package).
+     */
+    var castMode: Boolean
+        get() = prefs.getBoolean("cast_mode", false)
+        set(v) = prefs.edit { putBoolean("cast_mode", v) }
+
+    /** Root was granted to AARE once (the cast setup ran). */
+    var castRootReady: Boolean
+        get() = prefs.getBoolean("cast_root_ready", false)
+        set(v) = prefs.edit { putBoolean("cast_root_ready", v) }
+
+    /** Send the car's touches and keys to the phone. */
+    var castTouch: Boolean
+        get() = prefs.getBoolean("cast_touch", true)
+        set(v) = prefs.edit { putBoolean("cast_touch", v) }
+
+    /** Phone screen at brightness 0 while casting. */
+    var castBlankScreen: Boolean
+        get() = prefs.getBoolean("cast_blank", true)
+        set(v) = prefs.edit { putBoolean("cast_blank", v) }
+
+    /** Everything the phone plays goes to the car while casting. */
+    var castAudio: Boolean
+        get() = prefs.getBoolean("cast_audio", true)
+        set(v) = prefs.edit { putBoolean("cast_audio", v) }
+
+    /** Resize the phone's display to the head unit's shape while casting. */
+    var castResize: Boolean
+        get() = prefs.getBoolean("cast_resize", true)
+        set(v) = prefs.edit { putBoolean("cast_resize", v) }
+
+    /** The size the phone's display takes: an id from `CastDisplayPlan` (head unit, device or custom). */
+    var castResolution: String
+        get() = prefs.getString("cast_resolution", null) ?: "head_unit"
+        set(v) = prefs.edit { putString("cast_resolution", v) }
+    var castCustomWidth: Int
+        get() = prefs.getInt("cast_custom_width", 0)
+        set(v) = prefs.edit { putInt("cast_custom_width", v) }
+    var castCustomHeight: Int
+        get() = prefs.getInt("cast_custom_height", 0)
+        set(v) = prefs.edit { putInt("cast_custom_height", v) }
+
+    /** Display density while casting; 0 = automatic (things keep their size). */
+    var castDpi: Int
+        get() = prefs.getInt("cast_dpi", 0)
+        set(v) = prefs.edit { putInt("cast_dpi", v) }
+
+    /** Hold the phone in the head unit's orientation (landscape) while casting. */
+    var castLandscape: Boolean
+        get() = prefs.getBoolean("cast_landscape", true)
+        set(v) = prefs.edit { putBoolean("cast_landscape", v) }
+
+    /**
+     * The root shell script that undoes what the running cast changed on the phone's display, or
+     * null when nothing is changed. Written before the changes are made, synchronously, so a crash
+     * or a reboot in between still finds it (CastController.recover).
+     */
+    var castRestoreScript: String?
+        get() = prefs.getString("cast_restore_script", null)?.takeIf { it.isNotBlank() }
+        set(v) = prefs.edit(commit = true) { if (v.isNullOrBlank()) remove("cast_restore_script") else putString("cast_restore_script", v) }
 
     /** Offer "Phone screen" in the car: the phone's own screen, for apps AARE can't host (Google Maps, Waze). */
     var phoneScreen: Boolean
