@@ -31,6 +31,7 @@ import kotlin.system.exitProcess
  * reflection and differ between Android versions, so each one tries the known shapes in turn and
  * fails with a log line instead of a crash.
  */
+@SuppressLint("PrivateApi", "DiscouragedPrivateApi") // the hidden calls are the point of a root helper
 class CastHostService(private val allowedUid: Int, private val context: Context) : ICastHost.Stub() {
     private val lock = Any()
     private var display: VirtualDisplay? = null
@@ -167,7 +168,6 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
     }
 
     /** InputManagerGlobal from Android 14, InputManager before; both have injectInputEvent(InputEvent, int). */
-    @SuppressLint("PrivateApi", "DiscouragedPrivateApi")
     private val injector: Pair<Any, Method>? by lazy {
         val manager = sequenceOf("android.hardware.input.InputManagerGlobal", "android.hardware.input.InputManager")
             .mapNotNull { name -> runCatching { Class.forName(name).getMethod("getInstance").invoke(null) }.getOrNull() }
