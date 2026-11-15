@@ -37,7 +37,10 @@ import kotlin.system.exitProcess
  * reflection and differ between Android versions, so each one tries the known shapes in turn and
  * fails with a log line instead of a crash.
  */
-@SuppressLint("PrivateApi", "DiscouragedPrivateApi") // the hidden calls are the point of a root helper
+// The hidden calls are the point of a root helper. BlockedPrivateApi: lint only knows the app's
+// target SDK; this code runs in the root process, which exempts itself from the hidden API checks
+// when it starts (CastMain). The signed release build runs lint and would stop on these.
+@SuppressLint("PrivateApi", "DiscouragedPrivateApi", "BlockedPrivateApi", "SoonBlockedPrivateApi")
 class CastHostService(private val allowedUid: Int, private val context: Context) : ICastHost.Stub() {
     private val displayLock = Any()
     private var display: VirtualDisplay? = null
