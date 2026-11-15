@@ -72,7 +72,9 @@ by hand once (Android runs no apps before that).
   through the car's Bluetooth, as with Android Auto.
 - With the panel off, the touch screen of the phone itself still works: don't leave it where
   something presses on it.
-- Apps that mark their windows secure (banking, some video apps) show black, as on any mirror.
+- Apps that mark their windows secure (banking, some music and video apps) are mirrored too:
+  the mirror is a secure display, which root may create. Video that is DRM-protected in
+  hardware still shows black; nothing on the phone can read those frames.
 - The phone has to stay unlocked and awake; the app keeps the screen on while casting.
 - A mirrored phone is not a car interface. Set things up while parked.
 - Over the developer head unit server (and so the desktop head unit) the cast only runs with

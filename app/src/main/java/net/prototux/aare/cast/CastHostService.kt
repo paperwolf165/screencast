@@ -225,20 +225,32 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
     }
 
     /**
-     * A virtual display that shows what the phone's main display shows, drawn into [surface].
-     * First the platform's own "mirror this display" entry (Android 11+, what scrcpy uses), then
+     * A virtual display that shows what the phone's main display shows, drawn into [surface]:
+     * a secure one if Android allows, then the platform's own "mirror this display" entry, then
      * the public call with the auto-mirror flag, which root may use without a MediaProjection.
      */
     private fun createMirror(surface: Surface, w: Int, h: Int): VirtualDisplay? {
+        val dm = context.getSystemService(DisplayManager::class.java)
+        // A secure display first: apps that mark their windows secure (FLAG_SECURE: some music and
+        // video apps, banking apps) are drawn on it, where an ordinary mirror shows them black.
+        // Android only lets a holder of CAPTURE_SECURE_VIDEO_OUTPUT make one, which root is.
+        if (dm != null) {
+            runCatching {
+                // Density doesn't matter: the display only mirrors.
+                dm.createVirtualDisplay(NAME, w, h, 160, surface,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR or DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE)
+            }.onFailure { Log.i(TAG, "no secure mirror display here ($it); protected windows will show black") }
+                .getOrNull()?.let { Log.i(TAG, "mirroring on a secure display"); return it }
+        }
+        // The platform's own "mirror this display" entry (Android 11+, what scrcpy uses).
         runCatching {
             val int = Int::class.javaPrimitiveType
             val m = DisplayManager::class.java.getMethod("createVirtualDisplay", String::class.java, int, int, int, Surface::class.java)
             val vd = m.invoke(null, NAME, w, h, Display.DEFAULT_DISPLAY, surface) as? VirtualDisplay
             if (vd != null) return vd
         }.onFailure { Log.i(TAG, "no direct mirror display here (${it.cause ?: it}); trying the auto-mirror flag") }
-        val dm = context.getSystemService(DisplayManager::class.java) ?: return null
+        if (dm == null) return null
         return runCatching {
-            // Density doesn't matter: the display only mirrors.
             dm.createVirtualDisplay(NAME, w, h, 160, surface, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR)
         }.onFailure { Log.w(TAG, "Android refused the mirror display", it) }.getOrNull()
     }
