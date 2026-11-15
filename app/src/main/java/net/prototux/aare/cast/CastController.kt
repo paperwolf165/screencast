@@ -241,16 +241,16 @@ class CastController(private val context: Context, private val settings: Setting
         fun recover(context: Context) {
             val settings = Settings(context)
             if (settings.castRestoreScript == null) return
-            Thread({
+            val task = Runnable {
                 synchronized(stateLock) {
-                    if (active > 0) return@Thread
-                    val script = settings.castRestoreScript ?: return@Thread
-                    if (RootShell.run(script) != null) {
+                    val script = settings.castRestoreScript
+                    if (active == 0 && script != null && RootShell.run(script) != null) {
                         settings.castRestoreScript = null
                         DiagLog.add("screen cast: restored the phone display left changed by an interrupted cast")
                     }
                 }
-            }, "aare-cast-recover").apply { isDaemon = true }.start()
+            }
+            Thread(task, "aare-cast-recover").apply { isDaemon = true }.start()
         }
 
         /** Puts the display back now, whatever a cast changed (the settings page's button). Blocks. */
