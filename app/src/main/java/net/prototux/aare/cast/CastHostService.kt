@@ -171,24 +171,24 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         }
     }
 
-    override fun unlock(credential: String?): Boolean {
+    override fun unlock(credential: String?): String {
         enforceCaller()
         val id = Binder.clearCallingIdentity()
         try {
-            val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return false
+            val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return "no keyguard service"
             pressKey(KeyEvent.KEYCODE_WAKEUP)
             Thread.sleep(WAKE_SETTLE_MS)
-            if (!keyguard.isKeyguardLocked) return true
+            if (!keyguard.isKeyguardLocked) return UNLOCKED
             // Without a PIN this is the whole unlock; with one it brings up the PIN pad.
             run("wm dismiss-keyguard")
-            if (awaitUnlocked(keyguard, BOUNCER_WAIT_MS)) return true
-            if (credential.isNullOrEmpty()) return false
+            if (awaitUnlocked(keyguard, BOUNCER_WAIT_MS)) return UNLOCKED
+            if (credential.isNullOrEmpty()) return "the lock screen asks for a code and none is saved"
             typeText(credential)
             pressKey(KeyEvent.KEYCODE_ENTER)
-            return awaitUnlocked(keyguard, UNLOCK_WAIT_MS)
-        } catch (e: Exception) {
-            Log.w(TAG, "unlock failed: $e")
-            return false
+            return if (awaitUnlocked(keyguard, UNLOCK_WAIT_MS)) UNLOCKED else "still locked after typing the saved code"
+        } catch (e: Throwable) {
+            Log.w(TAG, "unlock failed", e)
+            return "error: $e"
         } finally {
             Binder.restoreCallingIdentity(id)
         }
@@ -433,5 +433,6 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         const val WAKE_SETTLE_MS = 500L
         const val BOUNCER_WAIT_MS = 1_200L
         const val UNLOCK_WAIT_MS = 3_000L
+        const val UNLOCKED = "unlocked"
     }
 }

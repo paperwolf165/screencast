@@ -49,9 +49,9 @@ interface ICastHost {
 
     /**
      * Wake the phone and dismiss the lock screen, typing [credential] (a PIN or password) if it asks
-     * for one. True if the phone is unlocked afterwards.
+     * for one. Returns "unlocked", or why the phone is still locked.
      */
-    boolean unlock(String credential) = 11;
+    String unlock(String credential) = 11;
 
     /** Turn the Wi-Fi hotspot on, or off if this helper turned it on. Returns a log line. */
     String hotspot(boolean on) = 12;

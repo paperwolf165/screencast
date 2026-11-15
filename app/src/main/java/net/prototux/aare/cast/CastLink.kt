@@ -104,8 +104,8 @@ class CastLink(private val context: Context) {
         runCatching { host?.lock() }
     }
 
-    /** Blocks for a few seconds while the lock screen goes away. */
-    fun unlock(code: String): Boolean = runCatching { host?.unlock(code) == true }.getOrDefault(false)
+    /** "unlocked", or why not. Blocks for a few seconds while the lock screen goes away. */
+    fun unlock(code: String): String = runCatching { host?.unlock(code) ?: "the root helper is gone" }.getOrElse { "call failed: $it" }
 
     fun hotspot(on: Boolean): String? = runCatching { host?.hotspot(on) }.getOrNull()
 

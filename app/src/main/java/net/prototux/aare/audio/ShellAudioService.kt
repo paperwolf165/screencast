@@ -51,7 +51,7 @@ class ShellAudioService : IShellAudio.Stub {
         // against the recording uid, and being root isn't enough. Drop to the shell uid (gid before
         // uid; once dropped we can't go back, which is fine: we only record audio from here on).
         if (Process.myUid() == 0) runCatching { Os.setgid(SHELL_UID); Os.setuid(SHELL_UID) }
-            .onFailure { Log.w(TAG, "could not drop to the shell uid", it); return null }
+            .onFailure { Log.w(TAG, "could not drop to the shell uid", it); System.err.println("${SuAudioMain.ERR} could not become the shell user: $it"); return null }
         return try {
             val format = AudioFormat.Builder()
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
@@ -89,6 +89,7 @@ class ShellAudioService : IShellAudio.Stub {
             read
         } catch (e: Exception) {
             Log.w(TAG, "remote submix capture failed", e)
+            System.err.println("${SuAudioMain.ERR} remote submix capture failed: $e")
             stop()
             null
         }
@@ -134,6 +135,7 @@ class ShellAudioService : IShellAudio.Stub {
             read
         } catch (e: Throwable) {
             Log.w(TAG, "audio policy as the shell failed", e)
+            System.err.println("${SuAudioMain.ERR} audio policy capture failed: $e" + (e.cause?.let { " (cause: $it)" } ?: ""))
             null
         }
     } }

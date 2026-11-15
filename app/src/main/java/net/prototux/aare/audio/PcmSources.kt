@@ -369,9 +369,16 @@ class SuSource(
             .onFailure { Log.w(TAG, "su launch", it) }.getOrNull() ?: return false
         process = p
         stream = p.inputStream
-        // Drain stderr so a chatty app_process can't fill its pipe and stall the capture.
+        // Drain stderr so a chatty app_process can't fill its pipe and stall the capture. What the
+        // helper says about a failed capture goes to the connection log: it is the only place the
+        // reason is visible without adb.
         Thread {
-            runCatching { p.errorStream.bufferedReader().forEachLine { if (BuildConfig.DEBUG) Log.d(TAG, "su: $it") } }
+            runCatching {
+                p.errorStream.bufferedReader().forEachLine {
+                    if (it.startsWith(SuAudioMain.ERR)) net.prototux.aare.DiagLog.add("root $it")
+                    else if (BuildConfig.DEBUG) Log.d(TAG, "su: $it")
+                }
+            }
         }.apply { isDaemon = true }.start()
         return true
     }

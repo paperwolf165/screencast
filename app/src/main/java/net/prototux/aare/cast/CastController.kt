@@ -219,8 +219,8 @@ class CastController(private val context: Context, private val settings: Setting
         // "mock location app" do that, which root makes this app without the Developer options.
         l.shell("appops set ${context.packageName} android:mock_location allow")
         if (settings.castAutoUnlock) {
-            val ok = l.unlock(settings.castUnlockCode)
-            DiagLog.add(if (ok) "screen cast: phone unlocked" else "screen cast: could not unlock the phone (is the saved PIN right?)")
+            val result = l.unlock(settings.castUnlockCode)
+            DiagLog.add(if (result == "unlocked") "screen cast: phone unlocked" else "screen cast: could not unlock the phone: $result")
         }
         if (settings.castHotspot) l.hotspot(true)?.let { DiagLog.add("screen cast: $it") }
     }

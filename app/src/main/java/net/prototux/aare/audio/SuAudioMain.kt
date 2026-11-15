@@ -1,5 +1,6 @@
 package net.prototux.aare.audio
 
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.system.Os
@@ -26,15 +27,23 @@ object SuAudioMain {
     fun main(args: Array<String>) {
         val rate = args.getOrNull(0)?.toIntOrNull() ?: 48_000
         val channels = args.getOrNull(1)?.toIntOrNull() ?: 2
+        // The capture needs this process's system context (ShellAudioService.systemContext), and
+        // making one creates a Handler: without a Looper on this thread that throws, and every
+        // capture failed before it began. The launcher's and the cast's helpers prepare one too.
+        if (Looper.myLooper() == null) Looper.prepareMainLooper()
         val usages = if (args.getOrNull(2) == "policy") args.getOrNull(3)?.split(',')?.mapNotNull { it.toIntOrNull() }?.toIntArray() else null
         val service = ShellAudioService(null)
         val opened = if (usages != null && usages.isNotEmpty()) {
             // The policy is registered and recorded as the shell; once dropped there is no way back, and none is needed.
-            if (Process.myUid() == 0) runCatching { Os.setgid(SHELL_UID); Os.setuid(SHELL_UID) }.onFailure { exitProcess(2) }
+            if (Process.myUid() == 0) runCatching { Os.setgid(SHELL_UID); Os.setuid(SHELL_UID) }.onFailure {
+                System.err.println("$ERR could not become the shell user: $it")
+                exitProcess(2)
+            }
             service.startPolicy(0, rate, channels, usages)
         } else {
             service.start(rate, channels)
         }
+        if (opened == null) System.err.println("$ERR no capture (see the lines above)")
         val pfd = opened ?: exitProcess(1)
         try {
             ParcelFileDescriptor.AutoCloseInputStream(pfd).use { input ->
@@ -57,4 +66,6 @@ object SuAudioMain {
     }
 
     private const val SHELL_UID = 2000
+    /** Starts the lines on stderr that the app copies into its connection log (SuSource). */
+    const val ERR = "audio-helper:"
 }
