@@ -328,7 +328,7 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         fun tokensOf(holder: Class<*>): List<IBinder> {
             val ids = holder.getMethod("getPhysicalDisplayIds").invoke(null) as LongArray
             val get = holder.getMethod("getPhysicalDisplayToken", Long::class.javaPrimitiveType)
-            return ids.mapNotNull { get.invoke(null, it) as? IBinder }
+            return ids.toList().mapNotNull { id -> get.invoke(null, id) as? IBinder }
         }
         // Android 14+: the calls moved to the system server's DisplayControl.
         runCatching { tokensOf(displayControlClass()) }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { return it }
