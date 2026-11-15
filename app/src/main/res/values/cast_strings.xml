@@ -55,8 +55,12 @@
     <string name="cast_resolution_custom_hint">Your own size, in the head unit\'s orientation (width first).</string>
     <string name="cast_custom_width">Width</string>
     <string name="cast_custom_height">Height</string>
-    <string name="cast_dpi_label">Density (dpi)</string>
-    <string name="cast_dpi_hint">Empty for automatic: things keep the size they have on the phone. Lower shows more, higher makes everything larger.</string>
+    <string name="cast_ui_scale_title">Size of everything</string>
+    <string name="cast_ui_scale_hint">Smaller fits more on the car screen: more map, more list. Goes below what Android\'s own Display size setting allows. At the smallest sizes some apps switch to their tablet layout.</string>
+    <string name="cast_font_scale_title">Text size</string>
+    <string name="cast_font_scale_hint">Shrinks text on top of that, below Android\'s smallest font size. 100% leaves the phone\'s own setting alone. Both go back to normal when the car disconnects.</string>
+    <string name="cast_dpi_label">Exact density (dpi)</string>
+    <string name="cast_dpi_hint">For a precise value instead of the sizes above: leave empty otherwise. Lower shows more, higher makes everything larger.</string>
     <string name="cast_restore_button">Restore the phone display now</string>
     <string name="cast_restore_hint">Wingmirror puts the display back when the car disconnects, and after a crash or reboot. This does it by hand.</string>
     <string name="cast_restore_done">Phone display restored</string>

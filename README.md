@@ -34,7 +34,9 @@ Android Auto connection (USB or wireless). The switches are under **Screen cast*
 | **Hotspot while connected** | Wi-Fi hotspot on when the car connects, off when it disconnects (left alone if it was already on) | `TetheringManager` from the root helper (Android 11+) |
 | **Fit the head unit** | The phone's display takes the car screen's shape: no black bars | `wm size` |
 | **Resolution** | *Head unit* (pixel for pixel), *Phone* (as large as the panel allows, scaled down for the car) or *Custom* | `wm size` |
-| **Density (dpi)** | Empty: things keep the size they have on the phone. Or your own value | `wm density` |
+| **Size of everything** | 100% keeps things the size they are on the phone; down to 55% fits more on the car screen (more map, more list), below what Android's Display size setting allows | `wm density` |
+| **Text size** | Shrinks text further, below Android's smallest font size | `settings put system font_scale` |
+| **Exact density (dpi)** | Your own density instead of the sizes above | `wm density` |
 
 Not a switch, always on: **the phone's location comes from the car's GPS** while connected, for
 every app, in place of the phone's own receiver. Root makes Wingmirror Android's "mock location

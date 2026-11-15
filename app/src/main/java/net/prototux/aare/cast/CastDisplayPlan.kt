@@ -18,8 +18,16 @@ data class CastOptions(
     val lockOrientation: Boolean,
     /** Brightness 0 while casting. */
     val blank: Boolean,
+    /**
+     * The size of everything on screen, in percent of what the phone shows (100: as on the phone).
+     * Below 100 the density drops under anything Android's own Display size setting offers, so
+     * more fits on the car screen. Not used when [dpi] is set.
+     */
+    val uiScale: Int = 100,
+    /** Text size in percent (Android's font scale); 100 leaves the phone's own setting alone. */
+    val fontScale: Int = 100,
 ) {
-    val changesDisplay: Boolean get() = resize || dpi > 0 || lockOrientation || blank
+    val changesDisplay: Boolean get() = resize || dpi > 0 || lockOrientation || blank || uiScale != 100 || fontScale != 100
 }
 
 /** The phone display's state before casting, as [CastDisplayPlan.PROBE] reports it. */
@@ -37,6 +45,8 @@ data class DeviceState(
     val autoRotate: Int?,
     val userRotation: Int?,
     val ignoreOrientationRequest: Boolean,
+    /** The phone's own font scale, as the setting holds it ("1.0", "1.15"); null when it was never changed. */
+    val fontScale: String? = null,
 )
 
 /** Root shell scripts: [apply] when the cast starts, [restore] to put everything back. */
@@ -63,6 +73,7 @@ object CastDisplayPlan {
         echo "auto_rotate=${'$'}(settings get system accelerometer_rotation)"
         echo "user_rotation=${'$'}(settings get system user_rotation)"
         echo "ignore_orientation=${'$'}(cmd window get-ignore-orientation-request 2>/dev/null)"
+        echo "font_scale=${'$'}(settings get system font_scale)"
     """.trimIndent()
 
     private val PHYSICAL_SIZE = Regex("""Physical size:\s*(\d+)x(\d+)""")
@@ -86,6 +97,7 @@ object CastDisplayPlan {
             autoRotate = setting("auto_rotate"),
             userRotation = setting("user_rotation"),
             ignoreOrientationRequest = Regex("""^ignore_orientation=.*\btrue\b""", RegexOption.MULTILINE).containsMatchIn(output),
+            fontScale = Regex("""^font_scale=(\d+(?:\.\d+)?)\s*$""", RegexOption.MULTILINE).find(output)?.groupValues?.get(1),
         )
     }
 
@@ -151,17 +163,27 @@ object CastDisplayPlan {
             summary += "${size.first}x${size.second}"
         }
 
+        val scale = options.uiScale.coerceIn(MIN_SCALE, MAX_SCALE) / 100f
         val dpi = when {
             options.dpi > 0 -> options.dpi
-            // Things keep the size they have on the phone: the density follows the short side.
+            // Things keep the size they have on the phone (the density follows the short side),
+            // times the size asked for.
             size != null -> (state.physicalDensity.toFloat() * min(size.first, size.second) /
-                min(state.physicalWidth, state.physicalHeight)).roundToInt()
+                min(state.physicalWidth, state.physicalHeight) * scale).roundToInt()
+            options.uiScale != 100 -> ((state.overrideDensity ?: state.physicalDensity) * scale).roundToInt()
             else -> null
         }?.coerceIn(MIN_DPI, MAX_DPI)
         if (dpi != null) {
             apply += "wm density $dpi"
             restore += state.overrideDensity?.let { "wm density $it" } ?: "wm density reset"
             summary += "$dpi dpi"
+        }
+
+        if (options.fontScale != 100) {
+            val font = options.fontScale.coerceIn(MIN_SCALE, MAX_SCALE)
+            apply += "settings put system font_scale ${font / 100}.${(font % 100).toString().padStart(2, '0')}"
+            restore += "settings put system font_scale ${state.fontScale ?: "1.0"}"
+            summary += "text $font%"
         }
 
         if (apply.isEmpty()) return CastPlan("", "", "phone display unchanged")
@@ -176,4 +198,6 @@ object CastDisplayPlan {
     private const val DEFAULT_BRIGHTNESS = 128
     private const val MIN_DPI = 72
     private const val MAX_DPI = 960
+    private const val MIN_SCALE = 40
+    private const val MAX_SCALE = 200
 }

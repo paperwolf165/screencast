@@ -27,7 +27,9 @@ class CastDisplayPlanTest {
         dpi: Int = 0,
         lockOrientation: Boolean = true,
         blank: Boolean = true,
-    ) = CastOptions(resize, resolution, customWidth, customHeight, dpi, lockOrientation, blank)
+        uiScale: Int = 100,
+        fontScale: Int = 100,
+    ) = CastOptions(resize, resolution, customWidth, customHeight, dpi, lockOrientation, blank, uiScale, fontScale)
 
     @Test
     fun parsesAPlainPhone() {
@@ -139,6 +141,46 @@ class CastDisplayPlanTest {
         val resizeOnly = CastDisplayPlan.plan(phone, options(lockOrientation = false, blank = false), 1920, 720)
         assertFalse(resizeOnly.apply.contains("screen_brightness"))
         assertFalse(resizeOnly.restore.contains("screen_brightness"))
+    }
+
+    @Test
+    fun aSmallerUiLowersTheDensity() {
+        // 280 dpi keeps the phone's sizes on a 1920x720 screen; 75% of that fits a third more.
+        val plan = CastDisplayPlan.plan(phone, options(uiScale = 75), 1920, 720)
+        assertTrue("wm density 210" in plan.apply.lines())
+        assertTrue("wm density reset" in plan.restore.lines())
+    }
+
+    @Test
+    fun anExactDensityWinsOverTheUiSize() {
+        val plan = CastDisplayPlan.plan(phone, options(uiScale = 75, dpi = 300), 1920, 720)
+        assertTrue("wm density 300" in plan.apply.lines())
+    }
+
+    @Test
+    fun theUiSizeWorksWithoutAResize() {
+        val plan = CastDisplayPlan.plan(phone, options(resize = false, lockOrientation = false, blank = false, uiScale = 65), 1920, 720)
+        assertTrue("wm density 273" in plan.apply.lines())
+        assertFalse(plan.apply.contains("wm size"))
+    }
+
+    @Test
+    fun textSizeIsSetAndPutBack() {
+        val plan = CastDisplayPlan.plan(phone, options(fontScale = 75), 1920, 720)
+        assertTrue("settings put system font_scale 0.75" in plan.apply.lines())
+        // Never changed on this phone: back to Android's default.
+        assertTrue("settings put system font_scale 1.0" in plan.restore.lines())
+
+        val enlarged = CastDisplayPlan.parse(probe + "\nfont_scale=1.15")!!
+        assertEquals("1.15", enlarged.fontScale)
+        assertTrue("settings put system font_scale 1.15" in CastDisplayPlan.plan(enlarged, options(fontScale = 65), 1920, 720).restore.lines())
+    }
+
+    @Test
+    fun textSizeAt100LeavesThePhonesSettingAlone() {
+        val plan = CastDisplayPlan.plan(phone, options(), 1920, 720)
+        assertFalse(plan.apply.contains("font_scale"))
+        assertFalse(plan.restore.contains("font_scale"))
     }
 
     @Test

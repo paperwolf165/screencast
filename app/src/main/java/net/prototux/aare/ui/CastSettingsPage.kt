@@ -58,6 +58,8 @@ internal fun CastSettings(settings: Settings) {
     var customWidth by remember { mutableStateOf(settings.castCustomWidth.takeIf { it > 0 }?.toString() ?: "") }
     var customHeight by remember { mutableStateOf(settings.castCustomHeight.takeIf { it > 0 }?.toString() ?: "") }
     var dpi by remember { mutableStateOf(settings.castDpi.takeIf { it > 0 }?.toString() ?: "") }
+    var uiScale by remember { mutableStateOf(settings.castUiScale.toString()) }
+    var fontScale by remember { mutableStateOf(settings.castFontScale.toString()) }
 
     // Asks the root manager (its prompt, once), then lets root grant the rest.
     val setUp: () -> Unit = {
@@ -177,6 +179,16 @@ internal fun CastSettings(settings: Settings) {
                     }
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            Choices(stringResource(R.string.cast_ui_scale_title), SCALES.map { it.toString() to "$it%" }, uiScale) {
+                uiScale = it; settings.castUiScale = it.toIntOrNull() ?: 100
+            }
+            Hint(stringResource(R.string.cast_ui_scale_hint))
+            Spacer(Modifier.height(12.dp))
+            Choices(stringResource(R.string.cast_font_scale_title), SCALES.map { it.toString() to "$it%" }, fontScale) {
+                fontScale = it; settings.castFontScale = it.toIntOrNull() ?: 100
+            }
+            Hint(stringResource(R.string.cast_font_scale_hint))
             NumberField(stringResource(R.string.cast_dpi_label), dpi, Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 dpi = it; settings.castDpi = it.toIntOrNull() ?: 0
             }
@@ -192,6 +204,9 @@ internal fun CastSettings(settings: Settings) {
         }
     }
 }
+
+/** The sizes offered, in percent of the phone's own: Android's settings stop around 85. */
+private val SCALES = listOf(100, 85, 75, 65, 55)
 
 @Composable
 private fun Hint(text: String) {

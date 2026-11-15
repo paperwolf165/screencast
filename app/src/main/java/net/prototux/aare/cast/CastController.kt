@@ -69,6 +69,8 @@ class CastController(private val context: Context, private val settings: Setting
             dpi = settings.castDpi,
             lockOrientation = settings.castLandscape,
             blank = settings.castBlankScreen,
+            uiScale = settings.castUiScale,
+            fontScale = settings.castFontScale,
         )
         worker.execute {
             if (stopped) return@execute

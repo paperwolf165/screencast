@@ -289,6 +289,16 @@ class Settings(context: Context) {
         get() = prefs.getInt("cast_dpi", 0)
         set(v) = prefs.edit { putInt("cast_dpi", v) }
 
+    /** The size of everything on screen while casting, in percent of the phone's own (see CastOptions.uiScale). */
+    var castUiScale: Int
+        get() = prefs.getInt("cast_ui_scale", 100)
+        set(v) = prefs.edit { putInt("cast_ui_scale", v) }
+
+    /** Text size while casting, in percent; 100 leaves the phone's own font size alone. */
+    var castFontScale: Int
+        get() = prefs.getInt("cast_font_scale", 100)
+        set(v) = prefs.edit { putInt("cast_font_scale", v) }
+
     /** Hold the phone in the head unit's orientation (landscape) while casting. */
     var castLandscape: Boolean
         get() = prefs.getBoolean("cast_landscape", true)
