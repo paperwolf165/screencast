@@ -65,7 +65,11 @@ undo, unit-tested), `CastController` (one session's cast) and `CastScreen` (the 
 
 ## Install Wingmirror
 
-Every push to `main` is built by GitHub Actions. Open the latest green run under
+Download `wingmirror-<version>.apk` from the
+[releases](https://github.com/paperwolf165/screencast/releases) and open it on the phone, or
+`adb install -r` it.
+
+For the newest code instead: every push to `main` is built by GitHub Actions. Open the latest green run under
 [Actions](https://github.com/paperwolf165/screencast/actions), download the `aare-debug-apk`
 artifact (you need to be signed in to GitHub), unzip it and install `app-debug.apk`:
 
