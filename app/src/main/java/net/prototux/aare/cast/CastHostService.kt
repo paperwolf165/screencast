@@ -208,7 +208,7 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         val methods = usb.javaClass.methods
         methods.first { it.name == "grantAccessoryPermission" && it.parameterTypes.size == 2 }.invoke(usb, accessory, uid)
         methods.first { it.name == "setAccessoryPackage" && it.parameterTypes.size == 3 }.invoke(usb, accessory, packageName, uid / PER_USER_RANGE)
-        "this head unit now opens AARE without asking"
+        "this head unit now opens Wingmirror without asking"
     }.getOrElse { "could not set the USB default: ${it.cause ?: it}" }
 
     private companion object {

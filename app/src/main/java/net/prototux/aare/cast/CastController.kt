@@ -155,7 +155,7 @@ class CastController(private val context: Context, private val settings: Setting
                     // Through the helper when it still runs (no new su process), else straight through su.
                     val done = (l?.takeIf { it.alive }?.shell(script) ?: RootShell.run(script)) != null
                     if (done) settings.castRestoreScript = null
-                    DiagLog.add(if (done) "screen cast: phone display restored" else "screen cast: could not restore the phone display; AARE retries when it next starts")
+                    DiagLog.add(if (done) "screen cast: phone display restored" else "screen cast: could not restore the phone display; it is retried when the app next starts")
                 }
                 l?.release()
                 link = null
@@ -175,7 +175,7 @@ class CastController(private val context: Context, private val settings: Setting
             l.release()
             linkFailedAt = SystemClock.elapsedRealtime()
             _status.value = Status.NO_ROOT
-            DiagLog.add("screen cast: no root helper (is AARE allowed in your root manager?)")
+            DiagLog.add("screen cast: no root helper (is Wingmirror allowed in your root manager?)")
             return null
         }
         linkFailedAt = 0L

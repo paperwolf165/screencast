@@ -862,7 +862,7 @@ private fun AudioSettings(settings: Settings, state: ProjectionService.State, re
                 if (policy) stringResource(R.string.audio_policy_ready)
                 else stringResource(R.string.audio_policy_not_ready),
                 policy) {
-                ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/prototux/AARE#car-audio")))
+                ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/paperwolf165/screencast#car-audio")))
             }
             Check(stringResource(CaptureMethod.SHIZUKU.title),
                 when {
@@ -1469,9 +1469,15 @@ private fun AboutScreen() {
             Pill(stringResource(R.string.about_link_issues), Icons.Rounded.BugReport) {
                 ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.ISSUES)))
             }
-            Pill(stringResource(R.string.about_link_discussions), Icons.Rounded.Forum) {
-                ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.DISCUSSIONS)))
-            }
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+    // The credit: this app is AARE with a screen cast mode added.
+    Section(stringResource(R.string.about_section_upstream_title)) {
+        Text(stringResource(R.string.about_upstream_text), style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
+        Pill(stringResource(R.string.about_link_upstream), Icons.Rounded.Code) {
+            ctx.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse(AboutLinks.UPSTREAM)))
         }
     }
     Spacer(Modifier.height(16.dp))

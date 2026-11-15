@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Screen cast mode (this fork). English only for now, so the translations aren't reported missing. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="about_section_upstream_title">Built on AARE</string>
+    <string name="about_upstream_text">Wingmirror is a fork of AARE by prototux and its contributors, the open-source Android Auto replacement. The Android Auto protocol, the connection, the audio and nearly everything else here is their work; this fork adds the root screen cast mode. The people thanked below are AARE\'s. GPL-3.0-or-later, like AARE.</string>
+    <string name="about_link_upstream" translatable="false">AARE on GitHub</string>
+
     <string name="cast_page_title">Screen cast</string>
     <string name="cast_page_subtitle">The phone\'s own screen in the car, with root</string>
 
     <string name="cast_section_mode">Screen cast mode</string>
     <string name="cast_toggle_mode_title">Cast the phone screen</string>
-    <string name="cast_toggle_mode_subtitle">The car shows the phone\'s screen, full screen, instead of AARE\'s car interface. Unlock the phone and plug it in: nothing to confirm.</string>
+    <string name="cast_toggle_mode_subtitle">The car shows the phone\'s screen, full screen, instead of Wingmirror\'s car interface. Unlock the phone and plug it in: nothing to confirm.</string>
     <string name="cast_root_title">Root access</string>
-    <string name="cast_root_ready">Granted. AARE mirrors the screen and sets its permissions itself, without Android\'s dialogs.</string>
+    <string name="cast_root_ready">Granted. Wingmirror mirrors the screen and sets its permissions itself, without Android\'s dialogs.</string>
     <string name="cast_root_missing">Tap to ask your root manager (Magisk, KernelSU, APatch). Choose to allow it for good: it is asked once.</string>
     <string name="cast_root_checking">Asking for root…</string>
-    <string name="cast_root_denied">Root was not granted. Allow AARE in your root manager, then tap again.</string>
+    <string name="cast_root_denied">Root was not granted. Allow Wingmirror in your root manager, then tap again.</string>
     <string name="cast_audio_needs_android12">Sending all of the phone\'s sound through root needs Android 12 or newer. On this phone, set up another method on the Car audio page.</string>
 
     <string name="cast_section_behaviour">While casting</string>
@@ -39,12 +43,12 @@
     <string name="cast_dpi_label">Density (dpi)</string>
     <string name="cast_dpi_hint">Empty for automatic: things keep the size they have on the phone. Lower shows more, higher makes everything larger.</string>
     <string name="cast_restore_button">Restore the phone display now</string>
-    <string name="cast_restore_hint">AARE puts the display back when the car disconnects, and after a crash or reboot. This does it by hand.</string>
+    <string name="cast_restore_hint">Wingmirror puts the display back when the car disconnects, and after a crash or reboot. This does it by hand.</string>
     <string name="cast_restore_done">Phone display restored</string>
     <string name="cast_restore_failed">Could not restore: root was not granted</string>
     <string name="cast_applies_next_connection">Changes apply from the next connection.</string>
 
     <string name="cast_status_starting">Starting the screen cast…</string>
-    <string name="cast_status_no_root">Screen cast needs root. Open AARE on the phone, go to Screen cast and grant root access.</string>
-    <string name="cast_status_failed">Android refused to mirror the phone screen. The connection log in AARE says why.</string>
+    <string name="cast_status_no_root">Screen cast needs root. Open Wingmirror on the phone, go to Screen cast and grant root access.</string>
+    <string name="cast_status_failed">Android refused to mirror the phone screen. The connection log in Wingmirror says why.</string>
 </resources>

@@ -4,9 +4,10 @@ import net.prototux.aare.R
 
 /** The project's own links, for the About screen. Not translatable: URLs, not UI text. */
 object AboutLinks {
-    const val REPOSITORY = "https://github.com/prototux/AARE"
-    const val ISSUES = "https://github.com/prototux/AARE/issues"
-    const val DISCUSSIONS = "https://github.com/prototux/AARE/discussions"
+    const val REPOSITORY = "https://github.com/paperwolf165/screencast"
+    const val ISSUES = "https://github.com/paperwolf165/screencast/issues"
+    /** AARE, the project this app is a fork of: nearly all of the code is theirs. */
+    const val UPSTREAM = "https://github.com/prototux/AARE"
 
     /** Where a GitHub handle shown in the About screen's Thanks list opens to. */
     fun profile(handle: String) = "https://github.com/$handle"

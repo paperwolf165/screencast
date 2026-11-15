@@ -1,14 +1,114 @@
-# AARE
+# Wingmirror
 
-[<img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="54">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/prototux/AARE)
+**Your phone's screen on the car's screen.** Wingmirror is an open-source app for rooted Android
+phones that mirrors the phone to a car head unit over the Android Auto connection the car already
+has, USB or wireless: full screen, with touch, sound and a display resized to fit. No Google
+services, no account, no tracking, and nothing to confirm each time: unlock the phone and plug it in.
 
-> [!IMPORTANT]
-> **This is a fork of [prototux/AARE](https://github.com/prototux/AARE) that adds a root-only
-> _screen cast mode_**: the head unit shows the phone's own screen, full screen, with touch, sound
-> and an automatic resize, and with no dialog to confirm on each connection. See
-> [Screen cast mode](#screen-cast-mode-rooted-phones). Everything else is upstream AARE, except
-> that the update check and the weather are off by default here, so a fresh install makes no
-> network request of its own.
+> [!NOTE]
+> **Wingmirror is a fork of [AARE](https://github.com/prototux/AARE) by
+> [prototux](https://github.com/prototux) and its contributors.** AARE is the open-source
+> replacement for the phone side of Android Auto: the protocol, the connection to the car, the
+> audio capture and nearly all of the code here are their work. This fork adds one thing, the root
+> **screen cast mode** below, and renames the app so the two aren't confused. All of AARE's own
+> features are still in the app and documented further down. Same licence: GPL-3.0.
+
+**Contents:** [Screen cast mode](#screen-cast-mode) · [Install](#install-wingmirror) ·
+[What differs from AARE](#what-differs-from-aare) · [Credits](#credits) ·
+[AARE's documentation](#aare-the-project-this-is-built-on)
+
+## Screen cast mode
+
+Turn it on under **Screen cast** in the app. The car then shows the phone's screen instead of
+the AARE car interface, over the same Android Auto connection (USB or wireless).
+
+| Switch | What it does | How |
+|---|---|---|
+| **Cast the phone screen** | The phone's display, full screen, on the head unit | A root helper mirrors the display into the video stream: no screen-capture dialog |
+| **Touch from the car** | Touches (multi-touch) and the car's keys act on the phone | Real input events injected by the root helper: no accessibility service |
+| **Blank the phone screen** | Brightness 0 while connected | `settings put system screen_brightness 0` |
+| **All sound to the car** | Everything the phone plays goes to the head unit, the phone stays quiet | AARE's root audio capture (Android 12+) |
+| **Force landscape** | Holds the phone in the head unit's orientation, portrait-only apps included | `user_rotation`, `fixed-to-user-rotation`, `set-ignore-orientation-request` |
+| **Fit the head unit** | The phone's display takes the car screen's shape: no black bars | `wm size` |
+| **Resolution** | *Head unit* (pixel for pixel), *Phone* (as large as the panel allows, scaled down for the car) or *Custom* | `wm size` |
+| **Density (dpi)** | Empty: things keep the size they have on the phone. Or your own value | `wm density` |
+
+**Setup, once:** turn the mode on and allow Wingmirror in your root manager (Magisk, KernelSU, APatch)
+when it asks; choose to allow it for good. Root then grants the rest by itself (the notification,
+Bluetooth and Wi-Fi permissions a connection uses, and the battery exemption), and after the
+first USB connection it makes Wingmirror the default app for that head unit. From then on: unlock the
+phone and plug it in.
+
+**The phone always gets its display back.** Everything the cast changes (size, density, rotation,
+brightness) is saved before it is changed and restored when the car disconnects. If the app is killed
+mid-cast the root helper restores it; after a reboot the app does when it next starts; and
+*Restore the phone display now* on the same page does it by hand.
+
+**Privacy.** The cast is local: the picture goes from the root helper to the encoder to the head
+unit, and nothing else. The helper is a process of the app's own code started with `su`, which only
+answers the app's uid and exits with the session. The setup grants no access to contacts, calls,
+location or the microphone.
+
+**Know before you drive:**
+
+- Android 12 or newer for the sound through root; the mirror itself works from Android 8.
+- Apps that mark their windows secure (banking, some video apps) show black, as on any mirror.
+- At brightness 0 some panels still glow faintly.
+- The phone has to stay unlocked and awake; the app keeps the screen on while casting.
+- A mirrored phone is not a car interface. Set things up while parked.
+- Over the developer head unit server (and so the desktop head unit) the cast only runs with
+  *Advanced > Phone screen on the server* on, as that peer is not authenticated.
+
+The code is in [`app/.../cast/`](app/src/main/java/net/prototux/aare/cast): `CastMain` and
+`CastHostService` (the root helper), `CastDisplayPlan` (the `wm`/`settings` commands and their
+undo, unit-tested), `CastController` (one session's cast) and `CastScreen` (the car screen).
+
+## Install Wingmirror
+
+Every push to `main` is built by GitHub Actions. Open the latest green run under
+[Actions](https://github.com/paperwolf165/screencast/actions), download the `aare-debug-apk`
+artifact (you need to be signed in to GitHub), unzip it and install `app-debug.apk`:
+
+```sh
+adb install -r app-debug.apk
+```
+
+Or build it yourself: `./gradlew :app:assembleDebug` (JDK 21 and the Android SDK).
+
+The build is debug-signed, and the app keeps AARE's application id (`net.prototux.aare`), so it
+replaces an installed AARE rather than sitting next to it: uninstall AARE first.
+
+Then open Wingmirror, go to **Screen cast**, turn it on and grant root.
+
+## What differs from AARE
+
+- **Screen cast mode**, with its settings page and root setup.
+- The app's name and icon.
+- The update check and the weather are **off by default**, so a fresh install makes no network
+  request of its own. The update check, if you turn it on, looks at this repository's releases.
+- The About screen links here for the code and issues, and credits AARE.
+
+Nothing of AARE's was removed: with screen cast mode off, the app is AARE (its car interface,
+apps, messages, assistant and so on, as documented below).
+
+## Credits
+
+- **[AARE](https://github.com/prototux/AARE)**, by [prototux](https://github.com/prototux) and
+  everyone in its [Thanks](#thanks) list: the project this is a fork of. If Wingmirror is useful
+  to you, that is where the credit goes. Problems with the Android Auto connection itself (a car
+  that refuses the phone, certificates) are usually best looked up in AARE's issues; please
+  report screen cast problems [here](https://github.com/paperwolf165/screencast/issues), not to
+  AARE.
+- [scrcpy](https://github.com/Genymobile/scrcpy), whose way of mirroring a display and injecting
+  input from a privileged helper process the cast follows.
+
+---
+
+# AARE, the project this is built on
+
+What follows is AARE's own README, kept as it is: it describes everything in the app besides
+screen cast mode, and the cars it has been tried with. Where it says AARE, read "this app"; its
+download links and release signature are AARE's own, not this fork's.
 
 **Android Auto, without Google.** AARE is an open-source replacement for the phone side of
 Android Auto. Plug your phone into the car, or connect wirelessly, and get your navigation, music,
@@ -60,52 +160,6 @@ Services, no account.
   ([Open-Meteo](https://open-meteo.com/), approximate position) and the update check (GitHub), both
   can be turned off, and the certificate download you ask for (or turn on to keep it up to date).
 - GPL-3.0, in 20 languages.
-
-## Screen cast mode (rooted phones)
-
-Turn it on under **Screen cast** in the app. The car then shows the phone's screen instead of
-AARE's car interface, over the same Android Auto connection (USB or wireless).
-
-| Switch | What it does | How |
-|---|---|---|
-| **Cast the phone screen** | The phone's display, full screen, on the head unit | A root helper mirrors the display into the video stream: no screen-capture dialog |
-| **Touch from the car** | Touches (multi-touch) and the car's keys act on the phone | Real input events injected by the root helper: no accessibility service |
-| **Blank the phone screen** | Brightness 0 while connected | `settings put system screen_brightness 0` |
-| **All sound to the car** | Everything the phone plays goes to the head unit, the phone stays quiet | AARE's root audio capture (Android 12+) |
-| **Force landscape** | Holds the phone in the head unit's orientation, portrait-only apps included | `user_rotation`, `fixed-to-user-rotation`, `set-ignore-orientation-request` |
-| **Fit the head unit** | The phone's display takes the car screen's shape: no black bars | `wm size` |
-| **Resolution** | *Head unit* (pixel for pixel), *Phone* (as large as the panel allows, scaled down for the car) or *Custom* | `wm size` |
-| **Density (dpi)** | Empty: things keep the size they have on the phone. Or your own value | `wm density` |
-
-**Setup, once:** turn the mode on and allow AARE in your root manager (Magisk, KernelSU, APatch)
-when it asks; choose to allow it for good. Root then grants the rest by itself (the notification,
-Bluetooth and Wi-Fi permissions a connection uses, and the battery exemption), and after the
-first USB connection it makes AARE the default app for that head unit. From then on: unlock the
-phone and plug it in.
-
-**The phone always gets its display back.** Everything the cast changes (size, density, rotation,
-brightness) is saved before it is changed and restored when the car disconnects. If AARE is killed
-mid-cast the root helper restores it; after a reboot AARE does when it next starts; and
-*Restore the phone display now* on the same page does it by hand.
-
-**Privacy.** The cast is local: the picture goes from the root helper to the encoder to the head
-unit, and nothing else. The helper is a process of AARE's own code started with `su`, which only
-answers AARE's uid and exits with the session. The setup grants no access to contacts, calls,
-location or the microphone.
-
-**Know before you drive:**
-
-- Android 12 or newer for the sound through root; the mirror itself works from Android 8.
-- Apps that mark their windows secure (banking, some video apps) show black, as on any mirror.
-- At brightness 0 some panels still glow faintly.
-- The phone has to stay unlocked and awake; AARE keeps the screen on while casting.
-- A mirrored phone is not a car interface. Set things up while parked.
-- Over the developer head unit server (and so the desktop head unit) the cast only runs with
-  *Advanced > Phone screen on the server* on, as that peer is not authenticated.
-
-The code is in [`app/.../cast/`](app/src/main/java/net/prototux/aare/cast): `CastMain` and
-`CastHostService` (the root helper), `CastDisplayPlan` (the `wm`/`settings` commands and their
-undo, unit-tested), `CastController` (one session's cast) and `CastScreen` (the car screen).
 
 ## Will it work in my car?
 
