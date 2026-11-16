@@ -19,7 +19,11 @@
     <string name="cast_share_missing">Tap before you connect, each time: Android asks to share the screen (choose the entire screen) and to let Wingmirror record what apps play. Android forgets it when the app stops.</string>
     <string name="cast_share_ready">Shared. Plug the phone into the car; it lasts until Wingmirror stops or you end the share.</string>
     <string name="cast_share_stop">Stop sharing</string>
-    <string name="cast_lite_limits">Without root there is no touch from the car (use the phone itself), the phone\'s screen stays on and keeps its own shape (black bars on a wide car screen), only media sound reaches the car and the phone plays it too (turn the phone\'s volume down), apps that protect their screen show black, and there is no lock or unlock, hotspot or car GPS.</string>
+    <string name="cast_lite_limits">Without root, touch from the car is slower and one finger only (see Touch from the car below), the phone\'s screen stays on and keeps its own shape (black bars on a wide car screen), only media sound reaches the car and the phone plays it too (turn the phone\'s volume down), apps that protect their screen show black, and there is no lock or unlock, hotspot or car GPS.</string>
+    <string name="cast_toggle_touch_lite_subtitle">Without root, through an accessibility service: a tap, long press or swipe on the head unit is replayed on the phone when your finger lifts. One finger, no pinch; the car\'s Back and Home keys work, its other keys don\'t.</string>
+    <string name="cast_touch_service_title">Accessibility service</string>
+    <string name="cast_touch_service_off">Tap to open Android\'s accessibility settings and turn Wingmirror on. If Android says the setting is restricted, open Wingmirror\'s app info first, tap the three dots and choose Allow restricted settings.</string>
+    <string name="cast_touch_service_on">On. Touches on the car screen are replayed on the phone.</string>
     <string name="cast_needs_root_note">Greyed out: needs root.</string>
     <string name="cast_audio_lite_note">Without root: music and video sound only, through the screen share, on Android 10 or newer. Navigation voice, notifications and calls stay on the phone, and the phone keeps playing the media as well.</string>
     <string name="cast_car_gps_lite_note">Without root the phone keeps its own GPS, unless you choose Wingmirror as the mock location app yourself in Android\'s Developer options.</string>

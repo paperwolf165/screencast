@@ -4,15 +4,19 @@ import android.content.Context
 import android.graphics.Point
 import android.graphics.Rect
 import android.media.projection.MediaProjection
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
+import android.view.ViewConfiguration
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import net.prototux.aare.DiagLog
 import net.prototux.aare.Settings
+import net.prototux.aare.mirror.MirrorTouchService
 import net.prototux.aare.mirror.PhoneMirror
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -47,7 +51,7 @@ class CastController(
     val status: StateFlow<Status> = _status
 
     private val worker = Executors.newSingleThreadExecutor { r -> Thread(r, "aare-cast").apply { isDaemon = true } }
-    private val touchEnabled = settings.castTouch && !settings.castLite
+    private val touchEnabled = settings.castTouch
 
     @Volatile private var link: CastLink? = null
     /** When the helper last failed to start (elapsedRealtime), so a missing root isn't retried in a loop. */
@@ -156,6 +160,11 @@ class CastController(
 
     /** A car touch in video frame pixels: mapped into the phone's display and injected. Recycles [ev]. */
     fun touch(ev: MotionEvent) {
+        if (lite) {
+            if (touchEnabled) liteTouch(ev)
+            ev.recycle()
+            return
+        }
         val l = link
         val r = view
         if (touchEnabled && l != null && r != null && r.width() > 0 && r.height() > 0) {
@@ -169,10 +178,78 @@ class CastController(
         ev.recycle()
     }
 
+    // ---- lite: touch without root
+
+    private val main = Handler(Looper.getMainLooper())
+    /** The finger's path on the phone's display since it went down (the session's input thread). */
+    private val stroke = ArrayList<Pair<Float, Float>>()
+    private var strokeStart = 0L
+    private var strokePointer = -1
+
+    /**
+     * Without root a touch can't be injected as it happens. The first finger's path is collected
+     * and, when it lifts, replayed on the phone by the accessibility service ([MirrorTouchService],
+     * if the user turned it on): a tap, a long press or a swipe. One finger only, and the phone
+     * reacts when the finger leaves the car screen, not while it moves.
+     */
+    private fun liteTouch(ev: MotionEvent) {
+        val r = view ?: return
+        if (r.width() <= 0 || r.height() <= 0) return
+        val p = phone
+        fun point(index: Int) = ((ev.getX(index) - r.left) * p.x / r.width()).coerceIn(0f, (p.x - 1).coerceAtLeast(0).toFloat()) to
+            ((ev.getY(index) - r.top) * p.y / r.height()).coerceIn(0f, (p.y - 1).coerceAtLeast(0).toFloat())
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                stroke.clear()
+                strokePointer = ev.getPointerId(0)
+                strokeStart = ev.eventTime
+                stroke += point(0)
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val index = ev.findPointerIndex(strokePointer)
+                if (index >= 0 && stroke.isNotEmpty()) stroke += point(index)
+            }
+            MotionEvent.ACTION_UP -> {
+                val index = ev.findPointerIndex(strokePointer)
+                if (index >= 0 && stroke.isNotEmpty()) stroke += point(index)
+                val points = ArrayList(stroke)
+                val duration = ev.eventTime - strokeStart
+                stroke.clear()
+                strokePointer = -1
+                if (points.isEmpty()) return
+                val slop = ViewConfiguration.get(context).scaledTouchSlop
+                val (x0, y0) = points.first()
+                val moved = points.any { (x, y) -> kotlin.math.hypot(x - x0, y - y0) > slop }
+                main.post {
+                    val service = MirrorTouchService.instance ?: return@post
+                    when {
+                        // Every third point is plenty for a path, and keeps the gesture small.
+                        moved -> service.swipe(points.filterIndexed { i, _ -> i % 3 == 0 || i == points.lastIndex }, duration)
+                        duration > LONG_PRESS_MS -> service.swipe(listOf(points.first()), duration)
+                        else -> service.tap(x0, y0)
+                    }
+                }
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                stroke.clear()
+                strokePointer = -1
+            }
+        }
+    }
+
     /** A car key (Back, Home, media keys, a rotary step): pressed on the phone. */
     fun key(keyCode: Int, down: Boolean) {
         // Android Auto's own key codes (its Media, Navigation, Phone buttons) mean nothing to the phone.
         if (!touchEnabled || keyCode <= 0 || keyCode > KeyEvent.getMaxKeyCode()) return
+        if (lite) {
+            // An accessibility service can't press keys: Back and Home are what it has.
+            if (down) return
+            when (keyCode) {
+                KeyEvent.KEYCODE_BACK -> main.post { MirrorTouchService.instance?.back() }
+                KeyEvent.KEYCODE_HOME -> main.post { MirrorTouchService.instance?.home() }
+            }
+            return
+        }
         link?.key(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
     }
 
@@ -339,6 +416,7 @@ class CastController(
 
     companion object {
         private const val RETRY_AFTER_MS = 30_000L
+        private const val LONG_PRESS_MS = 500L
         private const val WAKE_LOCK_MAX_MS = 12 * 60 * 60 * 1000L
 
         /** Serialises display changes and their recovery; [active] counts the casts that own the display. */

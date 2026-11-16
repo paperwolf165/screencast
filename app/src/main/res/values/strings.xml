@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Wingmirror</string>
-    <string name="mirror_touch_description">Lets you use the phone screen from the car: Wingmirror replays the touches made on the car screen on the phone, and checks which app is in front so the phone screen stays paused while driving unless it shows a navigation app. Wingmirror reads nothing else.</string>
+    <string name="mirror_touch_description">For casting without root: lets you use the phone from the car\'s screen. Wingmirror replays the taps and swipes made on the head unit on the phone, and notes which app is in front. It reads nothing on the screen. With root this service isn\'t needed.</string>
     <string name="mirror_locked_placeholder">The phone screen is paused while the phone is locked. Unlock the phone to show it.</string>
     <string name="mirror_driving_no_accessibility">The phone screen is paused while driving. To show navigation apps while driving, turn on Wingmirror in the phone\'s accessibility settings: it tells Wingmirror which app is open.</string>
     <string name="mirror_driving_nav_only">The phone screen is paused while driving. It shows navigation apps only.</string>

@@ -44,6 +44,8 @@ class MirrorTouchService : AccessibilityService() {
 
     fun back() = !locked() && performGlobalAction(GLOBAL_ACTION_BACK)
 
+    fun home() = !locked() && performGlobalAction(GLOBAL_ACTION_HOME)
+
     private fun locked() = getSystemService(KeyguardManager::class.java).isKeyguardLocked
 
     private fun stroke(points: List<Pair<Float, Float>>, durationMs: Long): Boolean {

@@ -49,7 +49,8 @@
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
     <!--
-      This fork only casts the phone's screen. It doesn't host car apps, so it neither defines nor
+      This fork only casts the phone's screen (the accessibility service below is its touch without
+      root, off unless the user turns it on). It doesn't host car apps, so it neither defines nor
       holds AARE's car-app permissions: a permission two apps define can only be installed once,
       which made this app and AARE (or anything else defining it) refuse each other. AARE's notification listener (messages, directions),
       its accessibility service (touch for the old phone-screen app), the voice assistant's provider
@@ -110,6 +111,22 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- Optional, for the cast without root: touch from the car, replayed on the phone as
+             accessibility gestures. The user turns it on in Android's accessibility settings; with
+             root it isn't used (the root helper injects real touches). -->
+        <service
+            android:name=".mirror.MirrorTouchService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/mirror_touch_service" />
+        </service>
 
         <!-- A paired head unit with wireless Android Auto connected over Bluetooth. No
              android:permission: both actions are protected system broadcasts, and BLUETOOTH_CONNECT

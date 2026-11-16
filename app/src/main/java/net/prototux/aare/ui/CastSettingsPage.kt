@@ -42,6 +42,7 @@ import net.prototux.aare.Settings
 import net.prototux.aare.cast.CastController
 import net.prototux.aare.cast.CastDisplayPlan
 import net.prototux.aare.cast.CastSetup
+import net.prototux.aare.mirror.MirrorTouchService
 import net.prototux.aare.service.ProjectionService
 
 /** The cast's settings: the root setup, and one switch per thing the cast does. */
@@ -185,10 +186,20 @@ internal fun CastSettings(settings: Settings, state: ProjectionService.State) {
         }
 
         Section(stringResource(R.string.cast_section_behaviour)) {
-            if (lite) Hint(stringResource(R.string.cast_needs_root_note))
-            Toggle(stringResource(R.string.cast_toggle_touch_title), stringResource(R.string.cast_toggle_touch_subtitle), touch, enabled = rooted) {
+            Toggle(stringResource(R.string.cast_toggle_touch_title),
+                stringResource(if (lite) R.string.cast_toggle_touch_lite_subtitle else R.string.cast_toggle_touch_subtitle), touch) {
                 touch = it; settings.castTouch = it
             }
+            if (lite && touch) {
+                // Read on each composition: the service connects when the user turns it on in Android's settings.
+                val service = MirrorTouchService.instance != null
+                Check(
+                    stringResource(R.string.cast_touch_service_title),
+                    stringResource(if (service) R.string.cast_touch_service_on else R.string.cast_touch_service_off),
+                    service,
+                ) { runCatching { ctx.startActivity(Intent(AndroidSettings.ACTION_ACCESSIBILITY_SETTINGS)) } }
+            }
+            if (lite) Hint(stringResource(R.string.cast_needs_root_note))
             Toggle(stringResource(R.string.cast_toggle_panel_title), stringResource(R.string.cast_toggle_panel_subtitle), panelOff, enabled = rooted) {
                 panelOff = it; settings.castPanelOff = it
             }

@@ -84,13 +84,16 @@ Android's own screen share, so:
 
 - **You share the screen by hand each time**: tap *Share the screen* on the Screen cast page
   before connecting (choose the entire screen). Android forgets the share when the app stops.
-- **The car sees the phone's screen and hears its media, and that is all.** The switches that need
-  root are shown greyed out.
+- **The car sees the phone's screen and hears its media.** The switches that need root are shown
+  greyed out.
+- **Touch is optional and simpler**: turn on Wingmirror's accessibility service (the Screen cast
+  page takes you there) and a tap, long press or one-finger swipe on the head unit is replayed on
+  the phone when the finger lifts. No pinch, and of the car's keys only Back and Home.
 
 | | With root | Without root (lite) |
 |---|---|---|
 | Starting a cast | nothing to confirm | share the screen by hand each time |
-| Touch from the car | yes, multi-touch | no: use the phone |
+| Touch from the car | yes, multi-touch, as you touch | one finger, replayed when it lifts, through an accessibility service you turn on |
 | Sound | every sound, and the phone is silent | media only (Android 10+); the phone plays it too |
 | Phone screen while casting | off | stays on |
 | Fit to the car screen, size of things | yes | no: the phone's own shape, with black bars |
@@ -159,12 +162,12 @@ Then open Wingmirror, go to **Screen cast** and grant root.
   assistant, messages, car audio methods and car data pages, the setup checklist and the car
   screen preview. What is left: *Screen cast*, *Connection*, *Advanced* (certificates, the log)
   and *About*.
-- **It cannot be given what it doesn't need.** The notification listener, the accessibility
-  service and the assistant's provider are not in the app, so Android never lists it under
-  notification access or accessibility. Neither are the phone, call log, contacts, calendar and
-  Do Not Disturb permissions. (The microphone permission is declared for the cast without root
-  only, where Android requires it to record a screen share's sound; with root it is never asked
-  for, and the microphone is never opened either way.)
+- **It cannot be given what it doesn't need.** The notification listener and the assistant's
+  provider are not in the app, so Android never lists it under notification access. Neither are
+  the phone, call log, contacts, calendar and Do Not Disturb permissions. Two things are there
+  for the cast without root only, and unused with root: the microphone permission, which Android
+  requires to record a screen share's sound (the microphone is never opened), and an
+  accessibility service for touch, off unless you turn it on, which reads nothing on the screen.
 - The app's name and icon.
 - The update check and the weather are off, so the app makes no network request of its own. (An
   update check would look at this repository's releases.)
