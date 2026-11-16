@@ -433,6 +433,8 @@ class ProjectionService : Service() {
                 // Strict head units accept only a Google-issued certificate. If we don't have one yet,
                 // offer to fetch it, so the user needn't open Advanced before connecting.
                 // Not when the car refused the dates: its clock is the likelier problem, and that notice says so.
+                // The home screen says so too, with the download a tap away, until one is added.
+                if (!datesRefused && !certs.hasGoogleCertificate()) settings.certRefusedByCar = true
                 if (!datesRefused && !certs.hasGoogleCertificate() && !certDownloadPrompted) {
                     certDownloadPrompted = true
                     certNotice(getString(R.string.notif_cert_download_title), getString(R.string.notif_cert_download_message), retry = true)
@@ -660,6 +662,7 @@ class ProjectionService : Service() {
                 result.onSuccess { entry ->
                     // Offer the downloaded certificate first on the next connection.
                     settings.certificateIndex = certs.indexOf(entry.name)
+                    settings.certRefusedByCar = false
                     certDownloadPrompted = false
                     CertificateUpdates.refresh(this@ProjectionService)
                     val address = lastWirelessAddress

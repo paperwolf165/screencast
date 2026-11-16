@@ -486,6 +486,15 @@ class Settings(context: Context) {
         get() = prefs.getString("cert_expiry_dismissed", null)
         set(v) = prefs.edit { putString("cert_expiry_dismissed", v) }
 
+    /**
+     * A head unit refused the phone's own certificate and no Google-issued one is on the phone: the
+     * home screen offers to download it (the notification that says so is easy to miss while
+     * plugging in). Cleared when one is added, or when the user says not now.
+     */
+    var certRefusedByCar: Boolean
+        get() = prefs.getBoolean("cert_refused_by_car", false)
+        set(v) = prefs.edit { putBoolean("cert_refused_by_car", v) }
+
     /** Index of the certificate to offer first (rotates after a head unit rejects one). */
     var certificateIndex: Int
         get() = prefs.getInt("cert_index", 0)

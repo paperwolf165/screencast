@@ -217,6 +217,7 @@ private fun Home() {
                 item { UpdateBanner() }
                 item { CertificateExpiryBanner() }
                 item { StatusCard(state) }
+                item { CertificateHelper(settings, certs, refresh) { page = Page.ADVANCED } }
                 item { SetupGuide(settings, state, refresh) { page = Page.CAST } }
                 item {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainer)) {
@@ -1203,6 +1204,58 @@ private fun CertificatesCard(certs: CertificateStore, state: ProjectionService.S
 }
 
 /** What to tell the user when Download certificate fails. */
+/**
+ * The car refused the phone's own certificate: most factory head units only take the one Google
+ * issues to Android Auto. Says so on the home screen and downloads it on a tap, the same download
+ * as under Advanced > Phone certificates ([openAdvanced], for importing one by hand instead).
+ */
+@Composable
+private fun CertificateHelper(settings: Settings, certs: CertificateStore, refresh: Int, openAdvanced: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var needed by remember(refresh) { mutableStateOf(settings.certRefusedByCar && !certs.hasGoogleCertificate()) }
+    var downloading by remember { mutableStateOf(false) }
+    var added by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    if (!needed && !added) return
+    Section(stringResource(if (added) R.string.notif_cert_download_ready_title else R.string.notif_cert_download_title)) {
+        if (added) {
+            Text(stringResource(R.string.cert_helper_added), style = MaterialTheme.typography.bodyMedium)
+        } else {
+            Text(stringResource(R.string.cert_helper_text, CertificateDownload.SOURCE), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            error?.let {
+                Spacer(Modifier.height(6.dp))
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(8.dp))
+            // The download on its own line: three buttons side by side don't fit a narrow phone.
+            Pill(stringResource(if (downloading) R.string.cert_action_downloading else R.string.cert_action_download), null) {
+                    if (!downloading) {
+                        downloading = true
+                        error = null
+                        scope.launch {
+                            error = runCatching {
+                                val d = withContext(Dispatchers.IO) { CertificateDownload.fetch() }
+                                val entry = certs.importDownloaded(d)
+                                // Offered first on the next connection.
+                                settings.certificateIndex = certs.indexOf(entry.name)
+                                settings.certRefusedByCar = false
+                                CertificateUpdates.refresh(ctx)
+                                added = true
+                                needed = false
+                            }.exceptionOrNull()?.let { downloadError(ctx, it) }
+                            downloading = false
+                        }
+                    }
+                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = openAdvanced) { Text(stringResource(R.string.cert_helper_manual)) }
+                TextButton(onClick = { settings.certRefusedByCar = false; needed = false }) { Text(stringResource(R.string.cert_helper_dismiss)) }
+            }
+        }
+    }
+}
+
 private fun downloadError(ctx: Context, e: Throwable): String = when (e) {
     is CertificateDownload.Unavailable -> ctx.getString(R.string.cert_download_unavailable, CertificateDownload.SOURCE)
     is CertificateDownload.Invalid -> ctx.getString(R.string.cert_download_invalid, e.message)

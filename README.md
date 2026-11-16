@@ -107,6 +107,12 @@ Lite asks for two Android permissions root makes unnecessary: notifications, and
 which is where Android files recording what other apps play. Wingmirror never opens the
 microphone.
 
+**If the car refuses the phone.** Most factory head units only accept the certificate Google
+issues to Android Auto, not Wingmirror's self-signed one. When a car turns the phone away for
+that, the home screen says so and offers the download right there (the same as *Advanced > Phone
+certificates > Download certificate*, see [AA key extraction](#aa-key-extraction)); then unplug
+and plug in again.
+
 **Know before you drive:**
 
 - Android 12 or newer for the sound through root; the mirror itself works from Android 8.

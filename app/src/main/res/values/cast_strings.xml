@@ -8,6 +8,11 @@
     <string name="cast_page_title">Screen cast</string>
     <string name="cast_page_subtitle">Every option of the cast, with or without root</string>
 
+    <string name="cert_helper_text">Your car turned the phone away because of its certificate. Most factory head units only accept the certificate Google issues to its own Android Auto app, and Wingmirror\'s own is self-signed. Download Android Auto\'s certificate (from %1$s), then unplug the phone and plug it in again.</string>
+    <string name="cert_helper_added">Android Auto\'s certificate was added. Unplug the phone and plug it in again: the car should accept it now.</string>
+    <string name="cert_helper_manual">Import my own</string>
+    <string name="cert_helper_dismiss">Not now</string>
+
     <string name="guide_choose_title">How will you cast?</string>
     <string name="guide_choose_text">Wingmirror shows this phone\'s screen on your car\'s screen. Pick the way that fits the phone; you can switch later.</string>
     <string name="guide_root_title">My phone is rooted</string>
