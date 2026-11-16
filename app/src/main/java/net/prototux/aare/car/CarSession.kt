@@ -193,6 +193,10 @@ class CarSession(
             navBridge?.updatePhone(g)
         }
         runtime.start()
+        if (cast != null && net.prototux.aare.cast.CastSetup.androidAutoEnabled(context)) {
+            DiagLog.add("WARNING: Google's Android Auto is enabled on this phone and takes the same USB connection: " +
+                "sessions will keep dropping. Turn it off under Screen cast in Wingmirror.")
+        }
         listener.onStatus(this, context.getString(R.string.notif_status_connecting_to, transport.name))
     }
 

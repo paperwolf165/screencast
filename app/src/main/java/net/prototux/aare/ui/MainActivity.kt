@@ -398,9 +398,13 @@ private fun Setup(refresh: Int, open: (Page) -> Unit) {
     val settings = remember { Settings(ctx) }
     @Suppress("UNUSED_EXPRESSION") refresh
     // Root is all a cast needs set up: with it, the app grants itself the rest (cast/CastSetup).
-    if (settings.castRootReady) return
+    // And Google's own Android Auto must not be active on the same phone: it takes the connection.
+    val root = settings.castRootReady
+    val androidAuto = net.prototux.aare.cast.CastSetup.androidAutoEnabled(ctx)
+    if (root && !androidAuto) return
     Section(stringResource(R.string.setup_finish_title)) {
-        Check(stringResource(R.string.cast_root_title), stringResource(R.string.cast_root_missing), false) { open(Page.CAST) }
+        if (!root) Check(stringResource(R.string.cast_root_title), stringResource(R.string.cast_root_missing), false) { open(Page.CAST) }
+        if (androidAuto) Check(stringResource(R.string.cast_android_auto_title), stringResource(R.string.cast_android_auto_enabled), false) { open(Page.CAST) }
     }
 }
 

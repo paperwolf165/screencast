@@ -26,6 +26,30 @@ object CastSetup {
         "android.permission.ACCESS_LOCAL_NETWORK",
     )
 
+    /** Google's Android Auto app. */
+    const val ANDROID_AUTO = "com.google.android.projection.gearhead"
+
+    /**
+     * Google's Android Auto is installed and enabled on this phone. It then answers every head unit
+     * too: Android tells it about the USB accessory whatever app the user chose, it opens the same
+     * connection, reads the head unit's bytes from under this app and, when it lets go, resets the
+     * link. Sessions then fail a tenth of a second in, over and over. Only one of the two can be
+     * active on a phone.
+     */
+    fun androidAutoEnabled(context: Context): Boolean = runCatching {
+        context.packageManager.getApplicationInfo(ANDROID_AUTO, 0).enabled
+    }.getOrDefault(false)
+
+    /** Disables Android Auto (or enables it again) with root. Nothing is uninstalled. Blocks. */
+    fun setAndroidAuto(context: Context, enabled: Boolean): Boolean {
+        val script = if (enabled) "pm enable $ANDROID_AUTO"
+            else "am force-stop $ANDROID_AUTO; pm disable-user --user 0 $ANDROID_AUTO"
+        RootShell.run(script) ?: return false
+        val now = androidAutoEnabled(context)
+        DiagLog.add("Android Auto on this phone: " + if (now) "enabled" else "disabled")
+        return now == enabled
+    }
+
     /** Whether all system audio can go to the car through root on this Android (the capture needs Android 12). */
     val audioSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 

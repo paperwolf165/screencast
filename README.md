@@ -67,6 +67,13 @@ what that means before turning it on: whoever can start your car's Android Auto 
 unlocked phone. Pattern locks can't be typed, and after a restart the phone has to be unlocked
 by hand once (Android runs no apps before that).
 
+**Google's Android Auto must be off on the phone.** If the Android Auto app is installed and
+enabled, it answers the head unit as well, whatever app you chose for the USB connection: it
+opens the same connection, reads the car's bytes from under Wingmirror and resets the link when
+it lets go. The session then drops a tenth of a second in, and the car retries for ever. The
+*Screen cast* page shows when it is on and turns it off with one tap (`pm disable-user`, with
+root; nothing is uninstalled, and the same page turns it back on).
+
 **Know before you drive:**
 
 - Android 12 or newer for the sound through root; the mirror itself works from Android 8.

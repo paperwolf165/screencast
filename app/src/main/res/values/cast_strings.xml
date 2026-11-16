@@ -17,6 +17,11 @@
     <string name="cast_root_denied">Root was not granted. Allow Wingmirror in your root manager, then tap again.</string>
     <string name="cast_audio_needs_android12">Sending the phone\'s sound to the car through root needs Android 12 or newer: on this phone the cast has no sound.</string>
 
+    <string name="cast_android_auto_title">Google\'s Android Auto</string>
+    <string name="cast_android_auto_enabled">Installed and on. It answers the car too, takes the same USB connection and makes every session drop within a second. Tap to turn it off on this phone (with root; nothing is uninstalled).</string>
+    <string name="cast_android_auto_disabled">Turned off on this phone, so the car\'s connection is Wingmirror\'s alone.</string>
+    <string name="cast_android_auto_enable">Turn Android Auto back on</string>
+
     <string name="cast_section_behaviour">While casting</string>
     <string name="cast_toggle_touch_title">Touch from the car</string>
     <string name="cast_toggle_touch_subtitle">Touches and keys on the head unit act on the phone, multi-touch included.</string>

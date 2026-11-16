@@ -41,6 +41,10 @@ internal fun CastSettings(settings: Settings) {
     val scope = rememberCoroutineScope()
     var root by remember { mutableStateOf(settings.castRootReady) }
     var asking by remember { mutableStateOf(false) }
+    var androidAuto by remember { mutableStateOf(CastSetup.androidAutoEnabled(ctx)) }
+    var androidAutoInstalled by remember {
+        mutableStateOf(runCatching { ctx.packageManager.getApplicationInfo(CastSetup.ANDROID_AUTO, 0); true }.getOrDefault(false))
+    }
     var denied by remember { mutableStateOf(false) }
     var touch by remember { mutableStateOf(settings.castTouch) }
     var blank by remember { mutableStateOf(settings.castBlankScreen) }
@@ -89,6 +93,24 @@ internal fun CastSettings(settings: Settings) {
                 root,
                 setUp,
             )
+            if (androidAutoInstalled) {
+                Check(
+                    stringResource(R.string.cast_android_auto_title),
+                    stringResource(if (androidAuto) R.string.cast_android_auto_enabled else R.string.cast_android_auto_disabled),
+                    !androidAuto,
+                ) {
+                    scope.launch {
+                        withContext(Dispatchers.IO) { CastSetup.setAndroidAuto(ctx.applicationContext, enabled = false) }
+                        androidAuto = CastSetup.androidAutoEnabled(ctx)
+                    }
+                }
+                if (!androidAuto) TextButton(onClick = {
+                    scope.launch {
+                        withContext(Dispatchers.IO) { CastSetup.setAndroidAuto(ctx.applicationContext, enabled = true) }
+                        androidAuto = CastSetup.androidAutoEnabled(ctx)
+                    }
+                }) { Text(stringResource(R.string.cast_android_auto_enable)) }
+            }
             Hint(stringResource(R.string.cast_applies_next_connection))
         }
 
