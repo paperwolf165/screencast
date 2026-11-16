@@ -67,6 +67,13 @@
     <string name="cast_restore_failed">Could not restore: root was not granted</string>
     <string name="cast_applies_next_connection">Changes apply from the next connection.</string>
 
+    <string name="diag_title">System diagnostics</string>
+    <string name="diag_text">When the car won\'t connect or the cast stops: tap this right after it happens. With root it saves why Android ended the app, what the phone\'s USB did and the related system log to %1$s. Nothing leaves the phone; the file is yours to share.</string>
+    <string name="diag_button">Save diagnostics</string>
+    <string name="diag_saving">Saving…</string>
+    <string name="diag_saved">Saved to Download/wingmirror-diagnostics.txt</string>
+    <string name="diag_failed">Could not save: root was not granted</string>
+
     <string name="cast_status_starting">Starting the screen cast…</string>
     <string name="cast_status_no_root">Screen cast needs root. Open Wingmirror on the phone, go to Screen cast and grant root access.</string>
     <string name="cast_status_failed">Android refused to mirror the phone screen. The connection log in Wingmirror says why.</string>

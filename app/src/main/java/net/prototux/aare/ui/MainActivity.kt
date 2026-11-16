@@ -243,6 +243,7 @@ private fun Home() {
                             item { HeadUnitServerSettings(settings) }
                             item { CertificatesCard(certs, state) }
                             item { VehicleOverridesCard() }
+                            item { DiagnosticsCard() }
                             item { LogCard() }
                         }
                         Page.ABOUT -> item { AboutScreen() }
