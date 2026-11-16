@@ -50,6 +50,23 @@ object CastSetup {
         return now == enabled
     }
 
+    /**
+     * Android Auto was turned off here and something (a system update, a Play Store update) has
+     * turned it back on: off again, in the background. Called when the app starts, after a boot
+     * and as a car connects. Does nothing unless the user asked for it to stay off, and nothing
+     * without root.
+     */
+    fun keepAndroidAutoOff(context: Context) {
+        val app = context.applicationContext
+        val settings = Settings(app)
+        if (!settings.castKeepAndroidAutoOff || settings.castLite || !androidAutoEnabled(app)) return
+        Thread({
+            val off = setAndroidAuto(app, enabled = false)
+            DiagLog.add(if (off) "Android Auto had been enabled again (an update?): disabled again"
+                else "Android Auto has been enabled again and could not be disabled: is root still granted?")
+        }, "aare-android-auto-off").apply { isDaemon = true }.start()
+    }
+
     /** Whether all system audio can go to the car through root on this Android (the capture needs Android 12). */
     val audioSupported: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 

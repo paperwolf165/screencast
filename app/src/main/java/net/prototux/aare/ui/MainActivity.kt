@@ -237,7 +237,7 @@ private fun Home() {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     when (p) {
-                        Page.CAST -> item { CastSettings(settings) }
+                        Page.CAST -> item { CastSettings(settings, state) }
                         Page.CONNECTION -> item { ConnectionSettings(settings, refresh) }
                         Page.ADVANCED -> {
                             item { HeadUnitServerSettings(settings) }
@@ -399,7 +399,8 @@ private fun Setup(refresh: Int, open: (Page) -> Unit) {
     @Suppress("UNUSED_EXPRESSION") refresh
     // Root is all a cast needs set up: with it, the app grants itself the rest (cast/CastSetup).
     // And Google's own Android Auto must not be active on the same phone: it takes the connection.
-    val root = settings.castRootReady
+    // Without root ("lite") there is no root to ask for: the screen share is given on the same page.
+    val root = settings.castRootReady || settings.castLite
     val androidAuto = net.prototux.aare.cast.CastSetup.androidAutoEnabled(ctx)
     if (root && !androidAuto) return
     Section(stringResource(R.string.setup_finish_title)) {
@@ -624,14 +625,16 @@ private fun MessageSettings(settings: Settings, refresh: Int) {
 }
 
 @Composable
-internal fun Toggle(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+internal fun Toggle(title: String, subtitle: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
+    // Not available (greyed out): shown off whatever is saved, and it doesn't react.
+    val faded = if (enabled) 1f else 0.38f
+    Row(Modifier.fillMaxWidth().clickable(enabled = enabled) { onChange(!checked) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface.copy(alpha = faded))
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = faded))
         }
         Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked && enabled, onCheckedChange = onChange, enabled = enabled)
     }
 }
 

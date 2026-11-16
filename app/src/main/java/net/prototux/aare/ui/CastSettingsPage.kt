@@ -1,6 +1,15 @@
 package net.prototux.aare.ui
 
+import android.Manifest
+import android.content.Intent
+import android.media.projection.MediaProjectionConfig
+import android.media.projection.MediaProjectionManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings as AndroidSettings
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,13 +42,29 @@ import net.prototux.aare.Settings
 import net.prototux.aare.cast.CastController
 import net.prototux.aare.cast.CastDisplayPlan
 import net.prototux.aare.cast.CastSetup
+import net.prototux.aare.service.ProjectionService
 
 /** The cast's settings: the root setup, and one switch per thing the cast does. */
 @Composable
-internal fun CastSettings(settings: Settings) {
+internal fun CastSettings(settings: Settings, state: ProjectionService.State) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var root by remember { mutableStateOf(settings.castRootReady) }
+    var lite by remember { mutableStateOf(settings.castLite) }
+    var keepAutoOff by remember { mutableStateOf(settings.castKeepAndroidAutoOff) }
+    // What needs root is shown greyed out in the mode without it.
+    val rooted = !lite
+    val shareConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == android.app.Activity.RESULT_OK && r.data != null) ProjectionService.giveAudioConsent(ctx, r.resultCode, r.data!!)
+    }
+    val askShare: () -> Unit = {
+        val mpm = ctx.getSystemService(MediaProjectionManager::class.java)
+        shareConsent.launch(if (Build.VERSION.SDK_INT >= 34) mpm.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay())
+            else mpm.createScreenCaptureIntent())
+    }
+    // The notification the connection runs under, and Android's permission for recording what
+    // apps play (filed under "microphone"): asked for first, then the screen share itself.
+    val sharePermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { askShare() }
     var asking by remember { mutableStateOf(false) }
     var androidAuto by remember { mutableStateOf(CastSetup.androidAutoEnabled(ctx)) }
     var androidAutoInstalled by remember {
@@ -82,29 +107,74 @@ internal fun CastSettings(settings: Settings) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Section(stringResource(R.string.cast_section_mode)) {
             Text(stringResource(R.string.cast_mode_text), style = MaterialTheme.typography.bodyMedium)
-            Check(
-                stringResource(R.string.cast_root_title),
-                stringResource(when {
-                    root -> R.string.cast_root_ready
-                    asking -> R.string.cast_root_checking
-                    denied -> R.string.cast_root_denied
-                    else -> R.string.cast_root_missing
-                }),
-                root,
-                setUp,
-            )
+            Spacer(Modifier.height(8.dp))
+            Choices(
+                stringResource(R.string.cast_mode_title),
+                listOf("root" to stringResource(R.string.cast_mode_root), "lite" to stringResource(R.string.cast_mode_lite)),
+                if (lite) "lite" else "root",
+            ) { lite = it == "lite"; settings.castLite = lite }
+            Hint(stringResource(if (lite) R.string.cast_mode_lite_hint else R.string.cast_mode_root_hint))
+            if (lite) {
+                Check(
+                    stringResource(R.string.cast_share_title),
+                    stringResource(if (state.audioCapture) R.string.cast_share_ready else R.string.cast_share_missing),
+                    state.audioCapture,
+                ) {
+                    sharePermissions.launch(buildList {
+                        add(Manifest.permission.RECORD_AUDIO)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+                    }.toTypedArray())
+                }
+                if (state.audioCapture) TextButton(onClick = { ProjectionService.stop(ctx) }) { Text(stringResource(R.string.cast_share_stop)) }
+                Hint(stringResource(R.string.cast_lite_limits))
+            } else {
+                Check(
+                    stringResource(R.string.cast_root_title),
+                    stringResource(when {
+                        root -> R.string.cast_root_ready
+                        asking -> R.string.cast_root_checking
+                        denied -> R.string.cast_root_denied
+                        else -> R.string.cast_root_missing
+                    }),
+                    root,
+                    setUp,
+                )
+            }
             if (androidAutoInstalled) {
                 Check(
                     stringResource(R.string.cast_android_auto_title),
-                    stringResource(if (androidAuto) R.string.cast_android_auto_enabled else R.string.cast_android_auto_disabled),
+                    stringResource(when {
+                        !androidAuto -> R.string.cast_android_auto_disabled
+                        lite -> R.string.cast_android_auto_enabled_lite
+                        else -> R.string.cast_android_auto_enabled
+                    }),
                     !androidAuto,
                 ) {
-                    scope.launch {
+                    if (lite) {
+                        // Without root it can only be done by hand: Android's own page for the app has Disable.
+                        runCatching {
+                            ctx.startActivity(Intent(AndroidSettings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", CastSetup.ANDROID_AUTO, null)))
+                        }
+                    } else scope.launch {
+                        withContext(Dispatchers.IO) { CastSetup.setAndroidAuto(ctx.applicationContext, enabled = false) }
+                        androidAuto = CastSetup.androidAutoEnabled(ctx)
+                        // Turned off here: it stays off.
+                        keepAutoOff = !androidAuto
+                        settings.castKeepAndroidAutoOff = keepAutoOff
+                    }
+                }
+                Toggle(stringResource(R.string.cast_android_auto_keep_title), stringResource(R.string.cast_android_auto_keep_subtitle), keepAutoOff, enabled = rooted) {
+                    keepAutoOff = it
+                    settings.castKeepAndroidAutoOff = it
+                    if (it && androidAuto) scope.launch {
                         withContext(Dispatchers.IO) { CastSetup.setAndroidAuto(ctx.applicationContext, enabled = false) }
                         androidAuto = CastSetup.androidAutoEnabled(ctx)
                     }
                 }
-                if (!androidAuto) TextButton(onClick = {
+                if (!androidAuto && rooted) TextButton(onClick = {
+                    // Wanted back: it is no longer kept off.
+                    keepAutoOff = false
+                    settings.castKeepAndroidAutoOff = false
                     scope.launch {
                         withContext(Dispatchers.IO) { CastSetup.setAndroidAuto(ctx.applicationContext, enabled = true) }
                         androidAuto = CastSetup.androidAutoEnabled(ctx)
@@ -115,32 +185,35 @@ internal fun CastSettings(settings: Settings) {
         }
 
         Section(stringResource(R.string.cast_section_behaviour)) {
-            Toggle(stringResource(R.string.cast_toggle_touch_title), stringResource(R.string.cast_toggle_touch_subtitle), touch) {
+            if (lite) Hint(stringResource(R.string.cast_needs_root_note))
+            Toggle(stringResource(R.string.cast_toggle_touch_title), stringResource(R.string.cast_toggle_touch_subtitle), touch, enabled = rooted) {
                 touch = it; settings.castTouch = it
             }
-            Toggle(stringResource(R.string.cast_toggle_panel_title), stringResource(R.string.cast_toggle_panel_subtitle), panelOff) {
+            Toggle(stringResource(R.string.cast_toggle_panel_title), stringResource(R.string.cast_toggle_panel_subtitle), panelOff, enabled = rooted) {
                 panelOff = it; settings.castPanelOff = it
             }
-            Toggle(stringResource(R.string.cast_toggle_blank_title), stringResource(R.string.cast_toggle_blank_subtitle), blank) {
+            Toggle(stringResource(R.string.cast_toggle_blank_title), stringResource(R.string.cast_toggle_blank_subtitle), blank, enabled = rooted) {
                 blank = it; settings.castBlankScreen = it
             }
             Toggle(stringResource(R.string.cast_toggle_audio_title), stringResource(R.string.cast_toggle_audio_subtitle), audio) {
                 audio = it; settings.castAudio = it
             }
-            if (audio && !CastSetup.audioSupported) Hint(stringResource(R.string.cast_audio_needs_android12))
-            Toggle(stringResource(R.string.cast_toggle_landscape_title), stringResource(R.string.cast_toggle_landscape_subtitle), landscape) {
+            if (lite) Hint(stringResource(R.string.cast_audio_lite_note))
+            else if (audio && !CastSetup.audioSupported) Hint(stringResource(R.string.cast_audio_needs_android12))
+            Toggle(stringResource(R.string.cast_toggle_landscape_title), stringResource(R.string.cast_toggle_landscape_subtitle), landscape, enabled = rooted) {
                 landscape = it; settings.castLandscape = it
             }
         }
 
         Section(stringResource(R.string.cast_section_car)) {
-            Toggle(stringResource(R.string.cast_toggle_lock_title), stringResource(R.string.cast_toggle_lock_subtitle), autoLock) {
+            if (lite) Hint(stringResource(R.string.cast_needs_root_note))
+            Toggle(stringResource(R.string.cast_toggle_lock_title), stringResource(R.string.cast_toggle_lock_subtitle), autoLock, enabled = rooted) {
                 autoLock = it; settings.castAutoLock = it
             }
-            Toggle(stringResource(R.string.cast_toggle_unlock_title), stringResource(R.string.cast_toggle_unlock_subtitle), autoUnlock) {
+            Toggle(stringResource(R.string.cast_toggle_unlock_title), stringResource(R.string.cast_toggle_unlock_subtitle), autoUnlock, enabled = rooted) {
                 autoUnlock = it; settings.castAutoUnlock = it
             }
-            if (autoUnlock) {
+            if (autoUnlock && rooted) {
                 OutlinedTextField(
                     value = code,
                     onValueChange = { code = it.take(64) },
@@ -164,17 +237,18 @@ internal fun CastSettings(settings: Settings) {
                 }
                 Hint(stringResource(R.string.cast_unlock_code_hint))
             }
-            Toggle(stringResource(R.string.cast_toggle_hotspot_title), stringResource(R.string.cast_toggle_hotspot_subtitle), hotspot) {
+            Toggle(stringResource(R.string.cast_toggle_hotspot_title), stringResource(R.string.cast_toggle_hotspot_subtitle), hotspot, enabled = rooted) {
                 hotspot = it; settings.castHotspot = it
             }
-            Hint(stringResource(R.string.cast_car_gps_note))
+            Hint(stringResource(if (lite) R.string.cast_car_gps_lite_note else R.string.cast_car_gps_note))
         }
 
         Section(stringResource(R.string.cast_section_display)) {
-            Toggle(stringResource(R.string.cast_toggle_resize_title), stringResource(R.string.cast_toggle_resize_subtitle), resize) {
+            Toggle(stringResource(R.string.cast_toggle_resize_title), stringResource(R.string.cast_toggle_resize_subtitle), resize, enabled = rooted) {
                 resize = it; settings.castResize = it
             }
-            if (resize) {
+            if (lite) Hint(stringResource(R.string.cast_display_lite_note))
+            if (resize && rooted) {
                 Spacer(Modifier.height(8.dp))
                 Choices(
                     stringResource(R.string.cast_resolution_title),
@@ -201,6 +275,7 @@ internal fun CastSettings(settings: Settings) {
                     }
                 }
             }
+            if (rooted) {
             Spacer(Modifier.height(12.dp))
             Choices(stringResource(R.string.cast_ui_scale_title), SCALES.map { it.toString() to "$it%" }, uiScale) {
                 uiScale = it; settings.castUiScale = it.toIntOrNull() ?: 100
@@ -223,6 +298,7 @@ internal fun CastSettings(settings: Settings) {
                 }
             }) { Text(stringResource(R.string.cast_restore_button)) }
             Hint(stringResource(R.string.cast_restore_hint))
+            }
         }
     }
 }

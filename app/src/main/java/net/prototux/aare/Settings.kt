@@ -214,6 +214,23 @@ class Settings(context: Context) {
         get() = prefs.getBoolean("cast_mode", true)
         set(v) = prefs.edit { putBoolean("cast_mode", v) }
 
+    /**
+     * Cast without root ("lite"): the mirror comes from Android's screen-share consent, given by
+     * hand before each use, and everything that needs root is off (touch, the display fit, the
+     * panel, lock and unlock, hotspot, car GPS, all-sound capture).
+     */
+    var castLite: Boolean
+        get() = prefs.getBoolean("cast_lite", false)
+        set(v) = prefs.edit { putBoolean("cast_lite", v) }
+
+    /**
+     * Google's Android Auto was turned off from this app and is to stay off: a system or Play
+     * update can enable it again, so it is checked and disabled again (CastSetup.keepAndroidAutoOff).
+     */
+    var castKeepAndroidAutoOff: Boolean
+        get() = prefs.getBoolean("cast_keep_android_auto_off", false)
+        set(v) = prefs.edit { putBoolean("cast_keep_android_auto_off", v) }
+
     /** Root was granted to AARE once (the cast setup ran). */
     var castRootReady: Boolean
         get() = prefs.getBoolean("cast_root_ready", false)

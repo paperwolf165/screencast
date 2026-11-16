@@ -10,6 +10,24 @@
 
     <string name="cast_section_mode">Screen cast</string>
     <string name="cast_mode_text">The car shows the phone\'s screen, full screen. Unlock the phone and plug it in: nothing to confirm.</string>
+    <string name="cast_mode_title">How it casts</string>
+    <string name="cast_mode_root">With root</string>
+    <string name="cast_mode_lite">Without root (lite)</string>
+    <string name="cast_mode_root_hint">Everything: touch from the car, all sound, the display fitted to the car, no dialog on any connection.</string>
+    <string name="cast_mode_lite_hint">For a phone that isn\'t rooted, or a quick try. The car sees the phone\'s screen and hears its media, and that is all: you share the screen by hand each time, and the switches that need root are greyed out below.</string>
+    <string name="cast_share_title">Share the screen</string>
+    <string name="cast_share_missing">Tap before you connect, each time: Android asks to share the screen (choose the entire screen) and to let Wingmirror record what apps play. Android forgets it when the app stops.</string>
+    <string name="cast_share_ready">Shared. Plug the phone into the car; it lasts until Wingmirror stops or you end the share.</string>
+    <string name="cast_share_stop">Stop sharing</string>
+    <string name="cast_lite_limits">Without root there is no touch from the car (use the phone itself), the phone\'s screen stays on and keeps its own shape (black bars on a wide car screen), only media sound reaches the car and the phone plays it too (turn the phone\'s volume down), apps that protect their screen show black, and there is no lock or unlock, hotspot or car GPS.</string>
+    <string name="cast_needs_root_note">Greyed out: needs root.</string>
+    <string name="cast_audio_lite_note">Without root: music and video sound only, through the screen share, on Android 10 or newer. Navigation voice, notifications and calls stay on the phone, and the phone keeps playing the media as well.</string>
+    <string name="cast_car_gps_lite_note">Without root the phone keeps its own GPS, unless you choose Wingmirror as the mock location app yourself in Android\'s Developer options.</string>
+    <string name="cast_display_lite_note">Without root the phone\'s display can\'t be resized: the car shows it in its own shape and orientation. Turn the phone sideways for a wider picture.</string>
+    <string name="cast_android_auto_enabled_lite">Installed and on. It answers the car too, takes the same USB connection and makes every session drop within a second. Tap to open its page in Android\'s settings and choose Disable.</string>
+    <string name="cast_android_auto_keep_title">Keep Android Auto off</string>
+    <string name="cast_android_auto_keep_subtitle">A system or Play Store update can turn it back on. Wingmirror checks when it starts, after a restart and as a car connects, and turns it off again.</string>
+    <string name="cast_status_needs_share">The phone\'s screen isn\'t shared yet. Open Wingmirror on the phone, go to Screen cast and tap Share the screen.</string>
     <string name="cast_root_title">Root access</string>
     <string name="cast_root_ready">Granted. Wingmirror mirrors the screen and sets its permissions itself, without Android\'s dialogs.</string>
     <string name="cast_root_missing">Tap to ask your root manager (Magisk, KernelSU, APatch). Choose to allow it for good: it is asked once.</string>

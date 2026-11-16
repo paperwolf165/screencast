@@ -34,6 +34,9 @@
     <!-- The car's GPS as the phone's location while connected (car/PhoneLocationFeed). -->
     <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"
         tools:ignore="MockLocation,ProtectedPermissions" />
+    <!-- Only for the cast without root: Android files "record what other apps play" (the sound of
+         a screen share) under the microphone permission. The microphone itself is never opened. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />

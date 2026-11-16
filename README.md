@@ -72,7 +72,37 @@ enabled, it answers the head unit as well, whatever app you chose for the USB co
 opens the same connection, reads the car's bytes from under Wingmirror and resets the link when
 it lets go. The session then drops a tenth of a second in, and the car retries for ever. The
 *Screen cast* page shows when it is on and turns it off with one tap (`pm disable-user`, with
-root; nothing is uninstalled, and the same page turns it back on).
+root; nothing is uninstalled, and the same page turns it back on). With *Keep Android Auto off*
+on, which turning it off there switches on, Wingmirror checks again when it starts, after a
+restart and as a car connects, and turns it off again if a system or Play Store update enabled
+it. Without root, the page opens Android's own settings for the app, where you choose *Disable*.
+
+### Without root (lite)
+
+*How it casts > Without root (lite)* is for a phone that isn't rooted, or a quick try. It uses
+Android's own screen share, so:
+
+- **You share the screen by hand each time**: tap *Share the screen* on the Screen cast page
+  before connecting (choose the entire screen). Android forgets the share when the app stops.
+- **The car sees the phone's screen and hears its media, and that is all.** The switches that need
+  root are shown greyed out.
+
+| | With root | Without root (lite) |
+|---|---|---|
+| Starting a cast | nothing to confirm | share the screen by hand each time |
+| Touch from the car | yes, multi-touch | no: use the phone |
+| Sound | every sound, and the phone is silent | media only (Android 10+); the phone plays it too |
+| Phone screen while casting | off | stays on |
+| Fit to the car screen, size of things | yes | no: the phone's own shape, with black bars |
+| Force landscape | yes | no: turn the phone |
+| Apps that protect their screen | shown | black |
+| Lock, unlock, hotspot | yes | no |
+| Car GPS as the phone's location | yes | only if you choose Wingmirror as mock location app yourself |
+| Turning Google's Android Auto off | one tap, kept off | by hand in Android's settings |
+
+Lite asks for two Android permissions root makes unnecessary: notifications, and "microphone",
+which is where Android files recording what other apps play. Wingmirror never opens the
+microphone.
 
 **Know before you drive:**
 
@@ -124,8 +154,10 @@ Then open Wingmirror, go to **Screen cast** and grant root.
   and *About*.
 - **It cannot be given what it doesn't need.** The notification listener, the accessibility
   service and the assistant's provider are not in the app, so Android never lists it under
-  notification access or accessibility. Neither are the microphone, phone, call log, contacts,
-  calendar, mock location and Do Not Disturb permissions.
+  notification access or accessibility. Neither are the phone, call log, contacts, calendar and
+  Do Not Disturb permissions. (The microphone permission is declared for the cast without root
+  only, where Android requires it to record a screen share's sound; with root it is never asked
+  for, and the microphone is never opened either way.)
 - The app's name and icon.
 - The update check and the weather are off, so the app makes no network request of its own. (An
   update check would look at this repository's releases.)

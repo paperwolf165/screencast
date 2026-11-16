@@ -3,6 +3,7 @@ package net.prototux.aare.cast
 import android.content.Context
 import android.graphics.Point
 import android.graphics.Rect
+import android.media.projection.MediaProjection
 import android.os.PowerManager
 import android.os.SystemClock
 import android.view.KeyEvent
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import net.prototux.aare.DiagLog
 import net.prototux.aare.Settings
+import net.prototux.aare.mirror.PhoneMirror
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -24,14 +26,28 @@ import java.util.concurrent.TimeUnit
  * Everything that waits for root runs on one worker thread, in order. [start], [attach], [detach]
  * and [stop] are called on the main thread; [touch] and [key] from any thread.
  */
-class CastController(private val context: Context, private val settings: Settings) {
-    enum class Status { STARTING, MIRRORING, NO_ROOT, FAILED }
+class CastController(
+    private val context: Context,
+    private val settings: Settings,
+    /** The screen-share consent, for the cast without root; null until the user gives it. */
+    private val projection: () -> MediaProjection? = { null },
+) {
+    enum class Status { STARTING, MIRRORING, NO_ROOT, FAILED, NEEDS_SHARE }
+
+    /**
+     * Without root: the mirror comes from Android's screen share ([projection]) and nothing else
+     * is done: no helper, no touch, no change to the phone's display.
+     */
+    val lite: Boolean = settings.castLite
+
+    /** Lite: the screen share is there and the mirror runs (main thread). The session starts its sound on it. */
+    var onShared: (() -> Unit)? = null
 
     private val _status = MutableStateFlow(Status.STARTING)
     val status: StateFlow<Status> = _status
 
     private val worker = Executors.newSingleThreadExecutor { r -> Thread(r, "aare-cast").apply { isDaemon = true } }
-    private val touchEnabled = settings.castTouch
+    private val touchEnabled = settings.castTouch && !settings.castLite
 
     @Volatile private var link: CastLink? = null
     /** When the helper last failed to start (elapsedRealtime), so a missing root isn't retried in a loop. */
@@ -66,6 +82,7 @@ class CastController(private val context: Context, private val settings: Setting
         if (stopped) return
         began = true
         acquireWakeLock()
+        if (lite) return
         val options = CastOptions(
             resize = settings.castResize,
             resolution = settings.castResolution,
@@ -94,6 +111,12 @@ class CastController(private val context: Context, private val settings: Setting
     /** The car screen has a surface for the mirror ([width] x [height] pixels), or it changed size. */
     fun attach(s: Surface, width: Int, height: Int) {
         if (stopped) return
+        if (lite) {
+            val ok = PhoneMirror.attach(projection(), s, width, height, context.resources.displayMetrics.densityDpi)
+            _status.value = if (ok) Status.MIRRORING else Status.NEEDS_SHARE
+            if (ok) onShared?.invoke()
+            return
+        }
         synchronized(surfaceLock) {
             surface = s
             surfaceWidth = width
@@ -114,6 +137,10 @@ class CastController(private val context: Context, private val settings: Setting
 
     /** The surface is going away: stop drawing into it before it is released. */
     fun detach(s: Surface) {
+        if (lite) {
+            PhoneMirror.detach()
+            return
+        }
         synchronized(surfaceLock) {
             if (surface !== s) return
             surface = null
@@ -162,6 +189,12 @@ class CastController(private val context: Context, private val settings: Setting
         if (stopped) return
         stopped = true
         releaseWakeLock()
+        if (lite) {
+            PhoneMirror.detach()
+            synchronized(stateLock) { active-- }
+            worker.shutdown()
+            return
+        }
         synchronized(surfaceLock) {
             surface = null
             link?.unmirror()

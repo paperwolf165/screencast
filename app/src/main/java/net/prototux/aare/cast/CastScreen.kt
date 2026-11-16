@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,6 +40,7 @@ import kotlin.math.roundToInt
 import net.prototux.aare.R
 import net.prototux.aare.car.ProjectionLayout
 import net.prototux.aare.mirror.PhoneMirror
+import net.prototux.aare.service.ProjectionService
 
 /**
  * The whole car screen in screen cast mode: the phone's display and nothing else (no bar, no
@@ -82,6 +84,9 @@ internal fun CastScreen(cast: CastController, layout: ProjectionLayout) {
             val w = (pw * scale).roundToInt().coerceIn(1, constraints.maxWidth.coerceAtLeast(1))
             val h = (ph * scale).roundToInt().coerceIn(1, constraints.maxHeight.coerceAtLeast(1))
             val phoneNow = phone
+            // Lite: a new view when the screen share comes (or goes), so the mirror starts with it.
+            val shared = ProjectionService.state.collectAsState().value.audioCapture
+            key(cast.lite && shared) {
             AndroidView(
                 factory = { ctx ->
                     TextureView(ctx).apply {
@@ -111,11 +116,13 @@ internal fun CastScreen(cast: CastController, layout: ProjectionLayout) {
                 // Runs on every recomposition: a phone size that changed without moving the view still gets through.
                 update = { v -> if (v.width > 0 && v.height > 0) cast.layout(currentRect(v), phoneNow) },
             )
+            }
             val message = when (status) {
                 CastController.Status.MIRRORING -> null
                 CastController.Status.STARTING -> stringResource(R.string.cast_status_starting)
                 CastController.Status.NO_ROOT -> stringResource(R.string.cast_status_no_root)
                 CastController.Status.FAILED -> stringResource(R.string.cast_status_failed)
+                CastController.Status.NEEDS_SHARE -> stringResource(R.string.cast_status_needs_share)
             }
             if (message != null) {
                 Text(message, color = Color.White, fontSize = 22.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(24.dp))

@@ -130,7 +130,7 @@ class CarSession(
      * instead of the car interface, and the car's touches and keys go to the phone. Null when off,
      * and for peers that may not see the phone screen ([mirror] false).
      */
-    private val cast: CastController? = if (settings.castMode && mirror) CastController(context, settings) else null
+    private val cast: CastController? = if (settings.castMode && mirror) CastController(context, settings, projection) else null
 
     private var video: VideoChannel? = null
     private var mic: MicrophoneChannel? = null
@@ -196,6 +196,14 @@ class CarSession(
         if (cast != null && net.prototux.aare.cast.CastSetup.androidAutoEnabled(context)) {
             DiagLog.add("WARNING: Google's Android Auto is enabled on this phone and takes the same USB connection: " +
                 "sessions will keep dropping. Turn it off under Screen cast in Wingmirror.")
+            // Asked to stay off and enabled again since: off now, so the car's next try gets through.
+            net.prototux.aare.cast.CastSetup.keepAndroidAutoOff(context)
+        }
+        // Without root the sound comes with the screen share, which can be given after the car connected.
+        cast?.onShared = {
+            audio.firstOrNull { it.streamType == AudioStreamType.AUDIO_STREAM_MEDIA && isPrimary(it) }?.let { ch ->
+                if (!closed && ch.config != null && !audioOuts.containsKey(AudioStreamType.AUDIO_STREAM_MEDIA)) startCastAudio(ch)
+            }
         }
         listener.onStatus(this, context.getString(R.string.notif_status_connecting_to, transport.name))
     }
@@ -834,6 +842,32 @@ class CarSession(
         val step = castAudioStep[type] ?: 0
         val rate = cfg.samplingRate
         val ch = cfg.numberOfChannels
+        if (cast?.lite == true) {
+            // Without root: what Android's screen share lets an app record. Media only, and the
+            // phone keeps playing it too.
+            if (guidance || audioOuts.containsKey(type)) return
+            // Null: it comes with the screen share (onShared).
+            val shared = projection() ?: return
+            when {
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.Q -> {
+                    DiagLog.add("screen cast audio (no root): needs Android 10 or newer")
+                    return
+                }
+                context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED -> {
+                    DiagLog.add("screen cast audio (no root): Android wants the microphone permission to record what apps play; allow it in Wingmirror")
+                    return
+                }
+            }
+            DiagLog.add("screen cast audio (no root): media sound through the screen share ($rate Hz, $ch ch)")
+            lateinit var liteOut: CarAudioOut
+            liteOut = CarAudioOut(PlaybackCaptureSource(shared, rate, ch), channel, mediaFocusRequests, onFailed = {
+                main.post {
+                    if (audioOuts.remove(type, liteOut)) DiagLog.add("screen cast audio (no root): Android refused to record the phone's sound")
+                }
+            })
+            audioOuts[type] = liteOut.also { it.start() }
+            return
+        }
         fun policy(all: IntArray): IntArray = when {
             guidance -> CaptureMethods.GUIDANCE_USAGES
             hasGuidance -> all.filter { it !in CaptureMethods.GUIDANCE_USAGES }.toIntArray()

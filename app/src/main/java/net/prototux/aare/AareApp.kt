@@ -16,6 +16,7 @@ class AareApp : Application() {
         logLastExit()
         // A cast cut short (the app killed, a reboot) may have left the display resized, turned or dark.
         net.prototux.aare.cast.CastController.recover(this)
+        net.prototux.aare.cast.CastSetup.keepAndroidAutoOff(this)
     }
 
     /**
