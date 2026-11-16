@@ -2,17 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--
-      Car App Library apps only accept hosts they trust. Apps built with androidx.car.app up to
-      1.8.0-beta01 also trust a host that holds this permission; on a phone no system package
-      defines it, so we define it (normal protection) and hold it. Newer library versions ignore it
-      on phones: those apps need our signing digest in their allow-list instead (see docs).
-    -->
-    <permission
-        android:name="android.car.permission.TEMPLATE_RENDERER"
-        android:protectionLevel="normal"
-        tools:ignore="ReservedSystemPermission" />
-    <uses-permission android:name="android.car.permission.TEMPLATE_RENDERER" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -54,17 +43,15 @@
     <!-- Car apps are found by querying their services. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
-    <!-- Car apps declare these; we only use them, Android Auto defines them when installed. -->
-    <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
-    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
-    <uses-permission android:name="androidx.car.app.MAP_TEMPLATES" />
 
     <uses-feature android:name="android.hardware.usb.accessory" android:required="false" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
     <!--
-      This fork only casts the phone's screen. AARE's notification listener (messages, directions),
+      This fork only casts the phone's screen. It doesn't host car apps, so it neither defines nor
+      holds AARE's car-app permissions: a permission two apps define can only be installed once,
+      which made this app and AARE (or anything else defining it) refuse each other. AARE's notification listener (messages, directions),
       its accessibility service (touch for the old phone-screen app), the voice assistant's provider
       and the microphone, phone, contacts, calendar and Do Not Disturb permissions are not declared:
       Android can't grant the app any of them. The code that used them is still in the source and

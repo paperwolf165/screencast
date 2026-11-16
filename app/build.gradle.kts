@@ -15,7 +15,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "net.prototux.aare"
+        // This fork's own id, so it installs next to AARE (and over nothing of AARE's): with AARE's
+        // id, a phone that had AARE, or an earlier build signed with another key, refused the
+        // install as a conflict. The code's namespace stays AARE's.
+        applicationId = "io.github.paperwolf165.wingmirror"
         // Android 8. Newer features need newer Android: car audio by screen capture and the
         // modern Wi-Fi join (10), Shizuku capture (12); older phones fall back or go without.
         minSdk = 26

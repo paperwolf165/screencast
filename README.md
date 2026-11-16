@@ -139,8 +139,15 @@ adb install -r app-debug.apk
 
 Or build it yourself: `./gradlew :app:assembleDebug` (JDK 21 and the Android SDK).
 
-The build is debug-signed, and the app keeps AARE's application id (`net.prototux.aare`), so it
-replaces an installed AARE rather than sitting next to it: uninstall AARE first.
+Wingmirror has its own application id (`io.github.paperwolf165.wingmirror`), so it installs next to AARE and
+doesn't replace it. Don't keep both active for the same car, though: uninstall the other, or
+Android asks which one opens the head unit each time.
+
+> [!NOTE]
+> **Coming from Wingmirror 2.2.0 or older?** Those builds used AARE's id (`net.prototux.aare`),
+> so this one installs as a new app beside the old one. Uninstall the old one, then set up again:
+> grant root, trust the head unit, and download the phone certificate if your car needed it. In
+> Obtainium, remove the old entry and add the repository again.
 
 Then open Wingmirror, go to **Screen cast** and grant root.
 

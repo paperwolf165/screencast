@@ -85,7 +85,8 @@ jobs:
           | \`$APK\` | the Android app ($SIGNED): \`adb install -r $APK\` or open it on the phone |
           | \`SHA256SUMS\` | checksums |
 
-          A rooted phone is required. Uninstall AARE, or an earlier build signed with another key, first.
+          Root gives the full cast; without it there is a lite mode. Wingmirror 2.2.0 and older used
+          another application id: uninstall those first, this one installs as a new app.
           See the [README](https://github.com/$GITHUB_REPOSITORY#readme) for setup.
 
           Wingmirror is a fork of [AARE](https://github.com/prototux/AARE) by prototux and its contributors.
