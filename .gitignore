@@ -53,3 +53,5 @@ google-services.json
 
 # Logs sent for debugging stay local
 /*-log.txt
+/logs/
+.DS_Store

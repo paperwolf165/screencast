@@ -1,7 +1,6 @@
 package net.prototux.aare.cast
 
 import android.annotation.SuppressLint
-import android.app.KeyguardManager
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -178,23 +177,33 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         enforceCaller()
         val id = Binder.clearCallingIdentity()
         try {
-            val keyguard = context.getSystemService(KeyguardManager::class.java) ?: return "no keyguard service"
             pressKey(KeyEvent.KEYCODE_WAKEUP)
             Thread.sleep(WAKE_SETTLE_MS)
-            if (!keyguard.isKeyguardLocked) return UNLOCKED
+            if (!keyguardLocked()) return UNLOCKED
             // Without a PIN this is the whole unlock; with one it brings up the PIN pad.
             run("wm dismiss-keyguard")
-            if (awaitUnlocked(keyguard, BOUNCER_WAIT_MS)) return UNLOCKED
+            if (awaitUnlocked(BOUNCER_WAIT_MS)) return UNLOCKED
             if (credential.isNullOrEmpty()) return "the lock screen asks for a code and none is saved"
             typeText(credential)
             pressKey(KeyEvent.KEYCODE_ENTER)
-            return if (awaitUnlocked(keyguard, UNLOCK_WAIT_MS)) UNLOCKED else "still locked after typing the saved code"
+            return if (awaitUnlocked(UNLOCK_WAIT_MS)) UNLOCKED else "still locked after typing the saved code"
         } catch (e: Throwable) {
             Log.w(TAG, "unlock failed", e)
-            return "error: $e"
+            return "error: ${(e as? java.lang.reflect.InvocationTargetException)?.cause ?: e}"
         } finally {
             Binder.restoreCallingIdentity(id)
         }
+    }
+
+    /**
+     * Asked of the window manager directly. KeyguardManager caches the answer in a way that needs
+     * the app runtime's shared memory, which a bare app_process doesn't have on Android 16 and
+     * later ("ApplicationSharedMemory not initialized").
+     */
+    private fun keyguardLocked(): Boolean {
+        val wm = Class.forName("android.view.WindowManagerGlobal").getMethod("getWindowManagerService").invoke(null)
+            ?: throw IllegalStateException("no window manager")
+        return wm.javaClass.getMethod("isKeyguardLocked").invoke(wm) as Boolean
     }
 
     override fun hotspot(on: Boolean): String {
@@ -293,13 +302,13 @@ class CastHostService(private val allowedUid: Int, private val context: Context)
         for (e in events) inject(e)
     }
 
-    private fun awaitUnlocked(keyguard: KeyguardManager, timeoutMs: Long): Boolean {
+    private fun awaitUnlocked(timeoutMs: Long): Boolean {
         val until = SystemClock.uptimeMillis() + timeoutMs
         while (SystemClock.uptimeMillis() < until) {
-            if (!keyguard.isKeyguardLocked) return true
+            if (!keyguardLocked()) return true
             Thread.sleep(100)
         }
-        return !keyguard.isKeyguardLocked
+        return !keyguardLocked()
     }
 
     // ---------------------------------------------------------------- the panel

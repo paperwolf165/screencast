@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import net.prototux.aare.DiagLog
 import net.prototux.aare.Settings
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * One car session's screen cast: owns the root helper ([CastLink]), fits the phone's display to
@@ -49,6 +51,8 @@ class CastController(private val context: Context, private val settings: Setting
     private var applied: Triple<Int, Int, CastOptions>? = null
     private var wakeLock: PowerManager.WakeLock? = null
     @Volatile private var stopped = false
+    /** The session got as far as casting ([start] was called): only then does its end pause, lock and so on. */
+    @Volatile private var began = false
 
     init {
         synchronized(stateLock) { active++ }
@@ -60,6 +64,7 @@ class CastController(private val context: Context, private val settings: Setting
      */
     fun start(targetWidth: Int, targetHeight: Int) {
         if (stopped) return
+        began = true
         acquireWakeLock()
         val options = CastOptions(
             resize = settings.castResize,
@@ -144,7 +149,15 @@ class CastController(private val context: Context, private val settings: Setting
         link?.key(if (down) KeyEvent.ACTION_DOWN else KeyEvent.ACTION_UP, keyCode)
     }
 
-    /** The session ended: the phone's display goes back to what it was and the helper exits. */
+    /**
+     * The session ended: the phone's display goes back to what it was.
+     *
+     * A head unit often drops and re-opens its USB link several times before a session holds, and
+     * some attempts end before any picture. So the rest is measured: a session that never got to
+     * cast changes nothing; one that did pauses the media at once, but only locks the phone and
+     * turns the hotspot off if the car hasn't come back within [END_GRACE_MS]. Locking the phone
+     * in the middle of the car's reconnection is what kept it from reconnecting.
+     */
     fun stop() {
         if (stopped) return
         stopped = true
@@ -155,36 +168,42 @@ class CastController(private val context: Context, private val settings: Setting
         }
         worker.execute {
             synchronized(stateLock) {
-                val l = link
+                val l = link?.takeIf { it.alive }
                 val script = settings.castRestoreScript
                 if (script != null) {
                     // Through the helper when it still runs (no new su process), else straight through su.
-                    val done = (l?.takeIf { it.alive }?.shell(script) ?: RootShell.run(script)) != null
+                    val done = (l?.shell(script) ?: RootShell.run(script)) != null
                     if (done) settings.castRestoreScript = null
                     DiagLog.add(if (done) "screen cast: phone display restored" else "screen cast: could not restore the phone display; it is retried when the app next starts")
                 }
-                // Whatever was playing stops with the car: a media Pause key, which does nothing when
-                // nothing plays. Otherwise the music would carry on from the phone's own speaker.
-                if (l != null && l.alive) {
-                    l.key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
-                    l.key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
-                } else {
-                    RootShell.run("input keyevent KEYCODE_MEDIA_PAUSE")
-                }
-                DiagLog.add("screen cast: media paused")
-                if (l != null && l.alive) {
-                    l.panel(true)
-                    if (settings.castHotspot) l.hotspot(false)?.let { DiagLog.add("screen cast: $it") }
-                    if (settings.castAutoLock) {
-                        l.lock()
-                        DiagLog.add("screen cast: phone locked")
-                    }
-                } else if (settings.castAutoLock) {
-                    RootShell.run("input keyevent KEYCODE_SLEEP")
-                }
-                l?.release()
                 link = null
                 active--
+                if (l == null) return@synchronized
+                l.setCleanup(onDeath(""))
+                l.panel(true)
+                if (!began) {
+                    l.release()
+                    return@synchronized
+                }
+                // Whatever was playing stops with the car: a media Pause key, which does nothing
+                // when nothing plays. Otherwise the music would carry on from the phone's speaker.
+                l.key(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                l.key(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                DiagLog.add("screen cast: media paused")
+                val lock = settings.castAutoLock
+                val hotspot = settings.castHotspot
+                if (!lock && !hotspot) {
+                    l.release()
+                    return@synchronized
+                }
+                // The helper is kept: it locks, and it knows whether the hotspot is its own.
+                val end = PendingEnd(l, lock, hotspot)
+                pendingEnd?.let { finish(it, carBack = false) }
+                pendingEnd = end
+                val later = Runnable { synchronized(stateLock) { if (pendingEnd === end) finish(end, carBack = false) } }
+                end.timer = endTimer.schedule(later, END_GRACE_MS, TimeUnit.MILLISECONDS)
+                DiagLog.add("screen cast: waiting ${END_GRACE_MS / 1000} s for the car to come back before " +
+                    listOfNotNull("locking the phone".takeIf { lock }, "turning the hotspot off".takeIf { hotspot }).joinToString(" and "))
             }
         }
         worker.shutdown()
@@ -194,6 +213,21 @@ class CastController(private val context: Context, private val settings: Setting
 
     private fun ensureLink(): CastLink? {
         link?.takeIf { it.alive }?.let { return it }
+        // The car came back within the grace time of the last session: its helper carries on, the
+        // phone still unlocked and the hotspot still on.
+        synchronized(stateLock) {
+            val kept = pendingEnd
+            if (kept != null) {
+                kept.timer?.cancel(false)
+                pendingEnd = null
+                if (kept.link.alive) {
+                    link = kept.link
+                    applied = null
+                    DiagLog.add("screen cast: the car is back, carrying on")
+                    return kept.link
+                }
+            }
+        }
         if (linkFailedAt != 0L && SystemClock.elapsedRealtime() - linkFailedAt < RETRY_AFTER_MS) return null
         val l = CastLink(context)
         if (!l.connect()) {
@@ -277,6 +311,31 @@ class CastController(private val context: Context, private val settings: Setting
         /** Serialises display changes and their recovery; [active] counts the casts that own the display. */
         private val stateLock = Any()
         private var active = 0
+
+        /** How long the car has to come back after a session ends before the phone is locked and the hotspot turned off. */
+        private const val END_GRACE_MS = 30_000L
+
+        /** A finished session's helper, kept for [END_GRACE_MS] to lock the phone and turn the hotspot off. */
+        private class PendingEnd(val link: CastLink, val lock: Boolean, val hotspot: Boolean) {
+            var timer: ScheduledFuture<*>? = null
+        }
+        /** Guarded by [stateLock]. */
+        private var pendingEnd: PendingEnd? = null
+        private val endTimer = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "aare-cast-end").apply { isDaemon = true } }
+
+        /** The grace time is over (or another session's end replaces this one): do what was put off. Holds [stateLock]. */
+        private fun finish(end: PendingEnd, carBack: Boolean) {
+            end.timer?.cancel(false)
+            if (pendingEnd === end) pendingEnd = null
+            if (!carBack && end.link.alive) {
+                if (end.hotspot) end.link.hotspot(false)?.let { DiagLog.add("screen cast: $it") }
+                if (end.lock) {
+                    end.link.lock()
+                    DiagLog.add("screen cast: phone locked")
+                }
+            }
+            end.link.release()
+        }
 
         /**
          * Undoes display changes a cast left behind (the app was killed and the helper with it, or
