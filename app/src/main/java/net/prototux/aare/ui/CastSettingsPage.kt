@@ -113,7 +113,7 @@ internal fun CastSettings(settings: Settings, state: ProjectionService.State) {
                 stringResource(R.string.cast_mode_title),
                 listOf("root" to stringResource(R.string.cast_mode_root), "lite" to stringResource(R.string.cast_mode_lite)),
                 if (lite) "lite" else "root",
-            ) { lite = it == "lite"; settings.castLite = lite }
+            ) { lite = it == "lite"; settings.castLite = lite; settings.castModeChosen = true }
             Hint(stringResource(if (lite) R.string.cast_mode_lite_hint else R.string.cast_mode_root_hint))
             if (lite) {
                 Check(

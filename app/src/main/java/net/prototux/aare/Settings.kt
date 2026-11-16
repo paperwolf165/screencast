@@ -224,6 +224,14 @@ class Settings(context: Context) {
         set(v) = prefs.edit { putBoolean("cast_lite", v) }
 
     /**
+     * The user picked how to cast (with root or without) on the home screen's guide. Installs from
+     * before the guide count as having picked: they were set up one way or the other.
+     */
+    var castModeChosen: Boolean
+        get() = prefs.getBoolean("cast_mode_chosen", false) || castRootReady || castLite
+        set(v) = prefs.edit { putBoolean("cast_mode_chosen", v) }
+
+    /**
      * Google's Android Auto was turned off from this app and is to stay off: a system or Play
      * update can enable it again, so it is checked and disabled again (CastSetup.keepAndroidAutoOff).
      */

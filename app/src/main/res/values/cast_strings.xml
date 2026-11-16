@@ -6,7 +6,22 @@
     <string name="about_link_upstream" translatable="false">AARE on GitHub</string>
 
     <string name="cast_page_title">Screen cast</string>
-    <string name="cast_page_subtitle">The phone\'s own screen in the car, with root</string>
+    <string name="cast_page_subtitle">Every option of the cast, with or without root</string>
+
+    <string name="guide_choose_title">How will you cast?</string>
+    <string name="guide_choose_text">Wingmirror shows this phone\'s screen on your car\'s screen. Pick the way that fits the phone; you can switch later.</string>
+    <string name="guide_root_title">My phone is rooted</string>
+    <string name="guide_root_text">The full cast: touch from the car, all sound in the car, the picture fitted to the car\'s screen, and nothing to confirm when you plug in.</string>
+    <string name="guide_lite_title">My phone isn\'t rooted</string>
+    <string name="guide_lite_text">Lite: the car shows the screen and plays media sound. You share the screen by hand each time; touch is simpler and some options aren\'t available.</string>
+    <string name="guide_steps_title_root">Set up: rooted phone</string>
+    <string name="guide_steps_title_lite">Set up: without root</string>
+    <string name="guide_touch_title">Touch from the car (optional)</string>
+    <string name="guide_ready_root">Ready. Unlock the phone and plug it into the car.</string>
+    <string name="guide_ready_lite">Ready. Plug the phone into the car. Share the screen again next time.</string>
+    <string name="guide_all_settings">All settings</string>
+    <string name="guide_switch_to_lite">Use without root</string>
+    <string name="guide_switch_to_root">Use with root</string>
 
     <string name="cast_section_mode">Screen cast</string>
     <string name="cast_mode_text">The car shows the phone\'s screen, full screen. Unlock the phone and plug it in: nothing to confirm.</string>

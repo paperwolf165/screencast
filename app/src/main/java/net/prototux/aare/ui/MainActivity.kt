@@ -217,7 +217,7 @@ private fun Home() {
                 item { UpdateBanner() }
                 item { CertificateExpiryBanner() }
                 item { StatusCard(state) }
-                item { Setup(refresh) { page = it } }
+                item { SetupGuide(settings, state, refresh) { page = Page.CAST } }
                 item {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.surfaceContainer)) {
                         Page.entries.forEach { CategoryRow(it) { page = it } }
@@ -391,23 +391,6 @@ private fun Pill(label: String, icon: ImageVector?, onClick: () -> Unit) {
 }
 
 // ---------------------------------------------------------------- setup checklist
-
-@Composable
-private fun Setup(refresh: Int, open: (Page) -> Unit) {
-    val ctx = LocalContext.current
-    val settings = remember { Settings(ctx) }
-    @Suppress("UNUSED_EXPRESSION") refresh
-    // Root is all a cast needs set up: with it, the app grants itself the rest (cast/CastSetup).
-    // And Google's own Android Auto must not be active on the same phone: it takes the connection.
-    // Without root ("lite") there is no root to ask for: the screen share is given on the same page.
-    val root = settings.castRootReady || settings.castLite
-    val androidAuto = net.prototux.aare.cast.CastSetup.androidAutoEnabled(ctx)
-    if (root && !androidAuto) return
-    Section(stringResource(R.string.setup_finish_title)) {
-        if (!root) Check(stringResource(R.string.cast_root_title), stringResource(R.string.cast_root_missing), false) { open(Page.CAST) }
-        if (androidAuto) Check(stringResource(R.string.cast_android_auto_title), stringResource(R.string.cast_android_auto_enabled), false) { open(Page.CAST) }
-    }
-}
 
 @Composable
 internal fun Check(title: String, subtitle: String, done: Boolean, onClick: () -> Unit) {
